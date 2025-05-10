@@ -58,7 +58,8 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    const lakeEdgePoints = [
+    const rawLakePoints = [
+      // ここに120点の { lat: ..., lng: ... } を貼り付けてください
 { lat: 35.018088, lng:  135.863113},
 { lat: 35.036081, lng:  135.866547},
 { lat: 35.036081, lng:  135.866547},
@@ -181,11 +182,30 @@
 { lat: 34.984672, lng:  135.909462}
     ];
 
+    function interpolatePoints(points, divisions = 4) {
+      const result = [];
+      for (let i = 0; i < points.length; i++) {
+        const p1 = points[i];
+        const p2 = points[(i + 1) % points.length];
+        for (let j = 0; j <= divisions; j++) {
+          const t = j / divisions;
+          result.push({
+            lat: p1.lat * (1 - t) + p2.lat * t,
+            lng: p1.lng * (1 - t) + p2.lng * t
+          });
+        }
+      }
+      return result;
+    }
+
+    const lakeEdgePoints = interpolatePoints(rawLakePoints, 4); // 4倍補間
+
     const biwakoElevation = 85.0;
     const lakeArea = 670000000;
     const volume = 20100000;
     const massTons = volume;
     let lineLayer;
+    let poolLayer;
 
     const map = L.map('map').setView([35.2, 136.0], 9);
     L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
@@ -214,15 +234,18 @@
       fetch(`https://cyberjapandata2.gsi.go.jp/general/dem/scripts/getelevation.php?lon=${lon}&lat=${lat}&outtype=JSON`)
         .then(res => res.json())
         .then(data => {
-          const elev = parseFloat(data.elevation);
-          document.getElementById('elevation').textContent = `上池標高：${elev.toFixed(1)} m`;
-          const drop = elev - biwakoElevation;
-          document.getElementById('drop').textContent = `有効落差：${drop.toFixed(1)} m`;
-          const energyJoules = massTons * 1000 * 9.8 * drop;
-          const energyGWh = energyJoules / 3.6e12;
-          document.getElementById('energy').textContent = `位置エネルギー：${energyGWh.toFixed(3)} GWh`;
-          const suiisa = (volume * 1000) / lakeArea;
-          document.getElementById('suii').textContent = `琵琶湖水位差：${suiisa.toFixed(3)} mm`;
+   const elev = parseFloat(data.elevation);
+  document.getElementById('elevation').textContent = `上池標高：${elev.toFixed(1)} m`;
+
+  const drop = elev - biwakoElevation;
+  document.getElementById('drop').textContent = `有効落差：${drop.toFixed(1)} m`;
+
+  const energyJoules = massTons * 1000 * 9.8 * drop;
+  const energyGWh = energyJoules / 3.6e12;
+  document.getElementById('energy').textContent = `位置エネルギー：${energyGWh.toFixed(3)} GWh`;
+
+  const suiisa = (volume * 1000) / lakeArea;
+  document.getElementById('suii').textContent = `琵琶湖水位差：${suiisa.toFixed(3)} mm`;
 
           let minDist = Infinity;
           let nearestPoint = null;
@@ -233,13 +256,19 @@
               nearestPoint = pt;
             }
           });
-
           document.getElementById('distance').textContent = `最短距離：${minDist.toFixed(2)} km`;
 
           if (lineLayer) map.removeLayer(lineLayer);
           const nearestLatLng = L.latLng(nearestPoint.lat, nearestPoint.lng);
           lineLayer = L.polyline([e.latlng, nearestLatLng], { color: 'blue' }).addTo(map);
 
+if (poolLayer) map.removeLayer(poolLayer);
+poolLayer = L.circle([lat, lon], {
+  radius: 200, // 単位はメートル
+  color: '#2196f3',
+  fillColor: '#bbdefb',
+  fillOpacity: 0.5
+}).addTo(map).bindPopup(`仮想ダムプール<br>半径150m`);
           document.getElementById('lakeLevelBar').style.height = Math.min(100, suiisa) + '%';
           document.getElementById('lakeValueLabel').textContent = suiisa.toFixed(1) + ' mm';
 

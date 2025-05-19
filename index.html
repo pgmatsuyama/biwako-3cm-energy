@@ -29,6 +29,7 @@
   <div id="map"></div>
   <span class="info" id="coords">緯度・経度：--　　　　</span> 
   <span><button onclick="openGoogleMap(35.1608, 135.8703)">Google Mapsで見る</button></span>
+  <span></span><button onclick="openGsiMap(35.0116, 135.7681)">国土地理院地図で見る</button></span>
   <div class="info" id="elevation">上池標高：-- m</div>
   <div class="info" id="drop">有効落差：-- m</div>
   <div class="info" id="energy">位置エネルギー：-- GWh</div>
@@ -225,6 +226,15 @@ let globalLon = null;
     　　alert("地図上の場所を選んでください！");
   　　}
     }
+  function openGsiMap(lat, lng, zoom=16) {
+    if(globalLat && globalLon) {
+     const url = `https://maps.gsi.go.jp/#${zoom}/${globalLat}/${globalLon}`;
+    　window.open(url, '_blank');
+    } else {
+    　　alert("地図上の場所を選んでください！");
+    }
+
+  }
 
    function toRad(deg) {
       return deg * Math.PI / 180;

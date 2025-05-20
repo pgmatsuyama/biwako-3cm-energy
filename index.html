@@ -5,6 +5,7 @@
   <title>びわ湖3cm電池シミュレータ</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
+    #inputGroup { display: none; } 
     #map { height: 500px; width: 100%; margin-bottom: 10px; }
     body { font-family: sans-serif; line-height: 1.6; padding: 20px; }
     .info { margin-top: 10px; font-weight: bold; }
@@ -27,9 +28,9 @@
   <h2>びわ湖3cm電池シミュレータ</h2>
   <p>地図をクリックすると、標高差と発電量、琵琶湖水位差、最短水際までの距離が表示されます。</p>
   <div id="map"></div>
-  <span class="info" id="coords">緯度・経度：--　　　　</span> 
+  <span class="info" id="coords">緯度・経度：--</span><span>　　</span> 
   <span><button onclick="openGoogleMap(35.1608, 135.8703)">Google Mapsで見る</button></span>
-  <span></span><button onclick="openGsiMap(35.0116, 135.7681)">国土地理院地図で見る</button></span>
+  <span>　　</span><button onclick="openGsiMap(35.0116, 135.7681)">国土地理院地図で見る</button></span>
   <div class="info" id="elevation">上池標高：-- m</div>
   <div class="info" id="drop">有効落差：-- m</div>
   <div class="info" id="energy">位置エネルギー：-- GWh</div>
@@ -52,15 +53,50 @@
       <div class="bar-label">エネルギー（GWh）</div>
     </div>
   </div>
-   <div>
+  <div id="inputGroup">
+    <br><br>
+    ピン登録<br>
+    タイトル: <input type="text" id="title"><br>
+  色: 
+    <label><input type="radio" name="color" value="🔴 赤" checked>🔴赤</label>
+    <label><input type="radio" name="color" value="🔵 青">🔵青</label>
+    <label><input type="radio" name="color" value="🟢 緑">🟢緑</label>
+    <label><input type="radio" name="color" value="🟡 黄">🟡黄</label><br><br>
+  <label>コメント:<br>
+　　　<textarea id="comment" rows="4" cols="40" placeholder="ここに複数行のコメントを入力できます"></textarea>
+  </label><br>
+<button onclick="submitForm()">ピン登録</button><br>
+  </div>
+  <div>
+    <button onclick="toggleInputGroup()">表示/非表示 切替</button>
+  </div><br><br> 
+  <div>
       <a class="btn" href="https://pgmatsuyama.github.io/biwako-denchi-kids/index.html" target="_blank">
          → びわ湖電池プロジェクト
       </a>
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
   <script>
-    const rawLakePoints = [
+   // シートのCSV公開URLに書き換えてください
+    const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRoUhhqWmQWeIRV55mDeNJwIXT7haLHZPC518jyra7_f_rNd82wjcPTAcRXYeUFSwogdTIXrwNTH_xE/pub?output=csv';
+/*
+const colorMap = {
+  '🔴 赤': 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
+  '🔵 青': 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png',
+  '🟢 緑': 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png',
+  '🟡 黄': 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-yellow.png'
+};
+*/
+const colorMap = {
+  '🔴 赤': 'images/marker-icon-red.png',
+  '🔵 青': 'images/marker-icon-blue.png',
+  '🟢 緑': 'images/marker-icon-green.png',
+  '🟡 黄': 'images/marker-icon-yellow.png'
+};
+
+const rawLakePoints = [
       // ここに120点の { lat: ..., lng: ... } を貼り付けてください
 { lat: 35.018088, lng:  135.863113},
 { lat: 35.036081, lng:  135.866547},
@@ -183,7 +219,15 @@
 { lat: 34.997048, lng:  135.915642},
 { lat: 34.984672, lng:  135.909462}
     ];
-
+function toggleInputGroup() {
+  const group = document.getElementById('inputGroup');
+  // displayがnoneならblockに、blockならnoneに切り替える
+  if (group.style.display === 'none') {
+    group.style.display = 'block';
+  } else {
+    group.style.display = 'none';
+  }
+}
     function interpolatePoints(points, divisions = 4) {
       const result = [];
       for (let i = 0; i < points.length; i++) {
@@ -214,10 +258,88 @@
       maxZoom: 17,
       attribution: '© OpenTopoMap (CC-BY-SA)'
     }).addTo(map);
+    // CSV取得してパースしてピン表示
+    fetch(CSV_URL)
+  .then(res => res.text())
+  .then(csv => {
+    // PapaparseでCSVをパース（自動でダブルクォートや改行もOK）
+    const result = Papa.parse(csv, { header: true });
+    const rows = result.data;
+    rows.forEach(row => {
+      let title = row['タイトル'];
+      let comment = row['コメント'] || '';
+      let elev=row['標高'] || '';
+      const color = (row['色'] || '').trim(); // 色
+      console.log('色:', color, 'URL:', colorMap[color]);
+ 
+const   icon = new L.Icon({
+     iconUrl: colorMap[color],
+  //iconUrl: 'images/marker-icon-red.png',
+  shadowUrl: 'images/marker-shadow.png',
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34],
+        shadowSize: [41, 41]
+      });
+comment = comment.replace(/\r?\n/g, '<br>');
+    L.marker(
+      [parseFloat(row['緯度']), parseFloat(row['経度'])], // 必ず配列で！
+      { icon: icon } // カスタムアイコン指定
+    ).addTo(map)        .bindPopup(`<b>${title} ${elev}m $</b><br>${comment}`);
 
+  
+   });
+  });
+/*fetch(CSV_URL)
+  .then(res => res.text())
+  .then(csv => {
+    const rows = csv.trim().split('\n').map(line => line.split(','));
+    for (let i = 1; i < rows.length; i++) {
+      const color = rows[i][2]; // 色
+      const title = rows[i][1]; // タイトル
+      //const comments = rows[i][6];
+      let comment = rows[i][6] || '';
+      comment = comment.replace(/\r?\n/g, '<br>');
+      const lat = parseFloat(rows[i][4]);
+      const lng = parseFloat(rows[i][5]);
+      const icon = new L.Icon({
+        iconUrl: colorMap[color],
+        shadowUrl: 'https://unpkg.com/leaflet/dist/images/marker-shadow.png',
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34],
+        shadowSize: [41, 41]
+      });
+      if (!isNaN(lat) && !isNaN(lng)) {
+        L.marker([lat, lng], {icon})
+          .addTo(map)
+          .bindPopup(`<b>${title}</b><br>${comment}`);
+      }
+    }
+  });
+  */
+ /*    fetch(CSV_URL)
+      .then(res => res.text())
+      .then(csv => {
+        const rows = csv.trim().split('\n').map(line => line.split(','));
+        // 1行目はヘッダ、2行目以降を処理
+        for (let i = 1; i < rows.length; i++) {
+          const row = rows[i];
+          const title = row[1]; // タイトル
+          const lat = parseFloat(row[4]);
+          const lng = parseFloat(row[5]);
+          const comment = row[6];
+          if (!isNaN(lat) && !isNaN(lng)) {
+            L.marker([lat, lng]).addTo(map)
+              .bindPopup(`<b>${title}</b><br>${comment}`);
+          }
+        }
+      });
+ */
 // グローバル変数を宣言
 let globalLat = null;
 let globalLon = null;
+let globalElev = null;
     function openGoogleMap(lat, lng) {
      if(globalLat && globalLon) {
     　 const url = `https://www.google.com/maps?q=${globalLat},${globalLon}`;
@@ -260,6 +382,7 @@ let globalLon = null;
         .then(res => res.json())
         .then(data => {
    const elev = parseFloat(data.elevation);
+   globalElev=elev;
   document.getElementById('elevation').textContent = `上池標高：${elev.toFixed(1)} m`;
 
   const drop = elev - biwakoElevation;
@@ -305,6 +428,19 @@ poolLayer = L.circle([lat, lon], {
           document.getElementById('elevation').textContent = `標高取得失敗`;
         });
     });
+    var openedWindow;
+    // GoogleフォームのURL（URLパラメータに各項目を渡すGET送信例）
+    function submitForm() {
+      const title = encodeURIComponent(document.getElementById('title').value);
+      const comment = encodeURIComponent(document.getElementById('comment').value);
+      const color = encodeURIComponent(document.querySelector('input[name="color"]:checked').value);
+  //    const elev=encodeURIComponent(document.getElementById('elevation').value);
+      // ここはGoogleフォームのフィールドIDに書き換え！
+    // const url = `https://docs.google.com/forms/d/e/1FAIpQLSfFurEII3ojMqlp5Rgc0KinkQ5gkmc9R6ijBzNqv8kvHumjyw/formResponse?entry.138516219=${title}&entry.514491795=${comment}&entry.1688590365=${color}&entry.1150820012=${lat}&entry.1539234844=${lng}`;
+    const url = `https://docs.google.com/forms/d/e/1FAIpQLSfFurEII3ojMqlp5Rgc0KinkQ5gkmc9R6ijBzNqv8kvHumjyw/formResponse?entry.138516219=${title}&entry.1539234844=${comment}&entry.1688590365=${color}&entry.1613901500=${globalElev}&entry.514491795=${globalLat}&entry.1150820012=${globalLon}`;
+      openedWindow=window.open(url, '_blank');
+    //  window.close(openedWindow);
+    }
   </script>
 </body>
 </html>

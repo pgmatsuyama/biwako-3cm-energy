@@ -450,6 +450,12 @@ poolLayer = L.circle([lat, lon], {
       const title = encodeURIComponent(document.getElementById('title').value);
       const comment = encodeURIComponent(document.getElementById('comment').value);
       const color = encodeURIComponent(document.querySelector('input[name="color"]:checked').value);
+const rawTitle = document.getElementById('title').value;
+const rawComment = document.getElementById('comment').value;
+      if (rawTitle == null || rawTitle === '' || rawComment == null || rawComment === ''){
+        alert("設定がありません \nタイトル・コメントを入力してください"); 
+        return;
+      }
   //    const elev=encodeURIComponent(document.getElementById('elevation').value);
       // ここはGoogleフォームのフィールドIDに書き換え！
         // const url = `https://docs.google.com/forms/d/e/1FAIpQLSfFurEII3ojMqlp5Rgc0KinkQ5gkmc9R6ijBzNqv8kvHumjyw/formResponse?entry.138516219=${title}&entry.514491795=${comment}&entry.1688590365=${color}&entry.1150820012=${lat}&entry.1539234844=${lng}`;
@@ -467,13 +473,12 @@ poolLayer = L.circle([lat, lon], {
         popupAnchor: [1, -34],
         shadowSize: [41, 41]
       });
-      const ctitle = document.getElementById('title').value;
       var ccomment = document.getElementById('comment').value;
-      c = ccomment.replace(/\r?\n/g, '<br>');
+      ccomment = ccomment.replace(/\r?\n/g, '<br>');
       const marker = L.marker(
       [globalLat, globalLon], // 必ず配列で！
       { icon: icon } // カスタムアイコン指定
-      ).addTo(map)        .bindPopup(`<b>${ctitle} ${globalElev}m </b><br>${ccomment}`);
+      ).addTo(map)        .bindPopup(`<b>${rawTitle} ${globalElev}m </b><br>${ccomment}`);
       markers.push(marker);
     }
  </script>

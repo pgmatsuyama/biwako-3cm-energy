@@ -28,12 +28,13 @@
   <h2>びわ湖3cm電池シミュレータ</h2>
   <p>地図をクリックすると、標高差と発電量、琵琶湖水位差、最短水際までの距離が表示されます。</p>
   <div id="map"></div>
-  <span class="info" id="coords">緯度・経度：--</span><span>　　</span> 
+  <span class="info" id="coords">緯度・経度：--</span><span>　</span> 
   <span><button onclick="openGoogleMap(35.1608, 135.8703)">Google Mapsで見る</button></span>
-  <span>　　</span><button onclick="openGsiMap(35.0116, 135.7681)">国土地理院地図で見る</button></span>
+  <span>　</span><button onclick="openGsiMap(35.0116, 135.7681)">国土地理院地図で見る</button> <span>　</span>
+  <button onclick="removemarkers()">ピン表示を消す</button></span><span>　</span><button onclick="addmarkers()">ピン表示をする</button></span>
   <div class="info" id="elevation">上池標高：-- m</div>
   <div class="info" id="drop">有効落差：-- m</div>
-  <div class="info" id="energy">位置エネルギー：-- GWh</div>
+  <div class="info" id="energy">位置エネルギー：-- GWh</div>  
   <div class="info" id="suii">琵琶湖水位差：-- mm</div>
   <div class="info" id="distance">最短距離：-- km</div>
 
@@ -55,20 +56,20 @@
   </div>
   <div id="inputGroup">
     <br><br>
-    ピン登録<br>
+    タイトル・コメント・ピンの色を指定して　新しいピン登録できます<br>
     タイトル: <input type="text" id="title"><br>
-  色: 
+  <label>コメント:<br>
+　　　<textarea id="comment" rows="4" cols="40" placeholder="ここに複数行のコメントを入力できます"></textarea>
+  </label><br>
+  ピンの色: 
     <label><input type="radio" name="color" value="🔴 赤" checked>🔴赤</label>
     <label><input type="radio" name="color" value="🔵 青">🔵青</label>
     <label><input type="radio" name="color" value="🟢 緑">🟢緑</label>
     <label><input type="radio" name="color" value="🟡 黄">🟡黄</label><br><br>
-  <label>コメント:<br>
-　　　<textarea id="comment" rows="4" cols="40" placeholder="ここに複数行のコメントを入力できます"></textarea>
-  </label><br>
-<button onclick="submitForm()">ピン登録</button><br>
+  <button onclick="submitForm()">ピンを登録します</button>　　Google フォームが出てきますがびっくりしないでね<br><br>
   </div>
   <div>
-    <button onclick="toggleInputGroup()">表示/非表示 切替</button>
+    <button onclick="toggleInputGroup()">ピン登録画面の 表示/非表示 切替</button>
   </div><br><br> 
   <div>
       <a class="btn" href="https://pgmatsuyama.github.io/biwako-denchi-kids/index.html" target="_blank">
@@ -221,12 +222,18 @@ const rawLakePoints = [
     ];
 function toggleInputGroup() {
   const group = document.getElementById('inputGroup');
-  // displayがnoneならblockに、blockならnoneに切り替える
-  if (group.style.display === 'none') {
-    group.style.display = 'block';
-  } else {
-    group.style.display = 'none';
+  if(globalLat && globalLon) {
+
+   // displayがnoneならblockに、blockならnoneに切り替える
+    if (group.style.display === 'none') {
+      group.style.display = 'block';
+    } else if (group.style.display === 'block') {
+      group.style.display = 'none';
+    } else{
+      group.style.display = 'block';
+    }
   }
+
 }
     function interpolatePoints(points, divisions = 4) {
       const result = [];
@@ -243,6 +250,14 @@ function toggleInputGroup() {
       }
       return result;
     }
+let markers = [];
+function removemarkers(){
+  markers.forEach(m => m.remove(map));
+}
+function addmarkers()
+{
+  markers.forEach(m => m.addTo(map));
+}
 
     const lakeEdgePoints = interpolatePoints(rawLakePoints, 4); // 4倍補間
 
@@ -252,8 +267,8 @@ function toggleInputGroup() {
     const massTons = volume;
     let lineLayer;
     let poolLayer;
-
     const map = L.map('map').setView([35.2, 136.0], 9);
+
     L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
       maxZoom: 17,
       attribution: '© OpenTopoMap (CC-BY-SA)'
@@ -282,11 +297,11 @@ const   icon = new L.Icon({
         shadowSize: [41, 41]
       });
 comment = comment.replace(/\r?\n/g, '<br>');
-    L.marker(
+    const marker = L.marker(
       [parseFloat(row['緯度']), parseFloat(row['経度'])], // 必ず配列で！
       { icon: icon } // カスタムアイコン指定
-    ).addTo(map)        .bindPopup(`<b>${title} ${elev}m $</b><br>${comment}`);
-
+    ).addTo(map)        .bindPopup(`<b>${title} ${elev}m </b><br>${comment}`);
+  markers.push(marker);
   
    });
   });
@@ -432,15 +447,32 @@ poolLayer = L.circle([lat, lon], {
     // GoogleフォームのURL（URLパラメータに各項目を渡すGET送信例）
     function submitForm() {
       const title = encodeURIComponent(document.getElementById('title').value);
-      const comment = encodeURIComponent(document.getElementById('comment').value);
+      var comment = encodeURIComponent(document.getElementById('comment').value);
       const color = encodeURIComponent(document.querySelector('input[name="color"]:checked').value);
   //    const elev=encodeURIComponent(document.getElementById('elevation').value);
       // ここはGoogleフォームのフィールドIDに書き換え！
-    // const url = `https://docs.google.com/forms/d/e/1FAIpQLSfFurEII3ojMqlp5Rgc0KinkQ5gkmc9R6ijBzNqv8kvHumjyw/formResponse?entry.138516219=${title}&entry.514491795=${comment}&entry.1688590365=${color}&entry.1150820012=${lat}&entry.1539234844=${lng}`;
+        // const url = `https://docs.google.com/forms/d/e/1FAIpQLSfFurEII3ojMqlp5Rgc0KinkQ5gkmc9R6ijBzNqv8kvHumjyw/formResponse?entry.138516219=${title}&entry.514491795=${comment}&entry.1688590365=${color}&entry.1150820012=${lat}&entry.1539234844=${lng}`;
     const url = `https://docs.google.com/forms/d/e/1FAIpQLSfFurEII3ojMqlp5Rgc0KinkQ5gkmc9R6ijBzNqv8kvHumjyw/formResponse?entry.138516219=${title}&entry.1539234844=${comment}&entry.1688590365=${color}&entry.1613901500=${globalElev}&entry.514491795=${globalLat}&entry.1150820012=${globalLon}`;
       openedWindow=window.open(url, '_blank');
     //  window.close(openedWindow);
+    const ccolor = document.querySelector('input[name="color"]:checked').value;
+      console.log('BTN  色:', ccolor, 'URL:', colorMap[ccolor]);
+    const   icon = new L.Icon({
+      iconUrl: colorMap[ccolor],
+  //iconUrl: 'images/marker-icon-red.png',
+      shadowUrl: 'images/marker-shadow.png',
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34],
+        shadowSize: [41, 41]
+      });
+     comment = comment.replace(/\r?\n/g, '<br>');
+      const marker = L.marker(
+      [globalLat, globalLon], // 必ず配列で！
+      { icon: icon } // カスタムアイコン指定
+      ).addTo(map)        .bindPopup(`<b>${title} ${globalElev}m </b><br>${comment}`);
+      markers.push(marker);
     }
-  </script>
+ </script>
 </body>
 </html>

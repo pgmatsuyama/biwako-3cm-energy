@@ -42,6 +42,11 @@ height: auto;      /* これが一番素直。これで子要素の高さにフ�
   font-size: 1.05em;
   overflow-y: auto;
 }
+.button-row {
+  display: flex;
+  gap: 0.7em;  /* ボタンの間に適度な空き */
+  margin-bottom: 8px; /* お好みで下の隙間 */
+}
 #map {
   width: 100%;
   height: 600px;      /* 必要に応じて */
@@ -98,9 +103,11 @@ height: auto;      /* これが一番素直。これで子要素の高さにフ�
   </div>
   <div class="result-block">
     <div>結果の表示エリア</div>
-    <span class="info" id="coords">緯度・経度：--</span>
-    <span><button onclick="openGoogleMap(35.1608, 135.8703)">Google Mapsで見る</button></span>
-    <span><button onclick="openGsiMap(35.0116, 135.7681)">国土地理院地図で見る</button></span>
+    <div class="info" id="coords">緯度・経度：--</div>
+    <div class="button-row">
+    <button onclick="openGoogleMap(35.1608, 135.8703)">Google Maps を見る</button>
+    <button onclick="openGsiMap(35.0116, 135.7681)">国土地理院地図　を見る</button>
+    </div>
     <div class="info" id="elevation">上池標高：-- m</div>
     <div class="info" id="drop">有効落差：-- m</div>
     <div class="info" id="energy">位置エネルギー：-- GWh</div>  

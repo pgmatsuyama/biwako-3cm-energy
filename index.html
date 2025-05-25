@@ -324,7 +324,6 @@ const rawLakePoints = [
     const lakeEdgePoints = interpolatePoints(rawLakePoints, 4); // 4倍補間
 
   let imgLoaded = false;
-  let overlay = null;
     const biwakoElevation = 85.0;
     const lakeArea = 670000000;
     const volume = 20100000;
@@ -372,6 +371,29 @@ function nextstep()
   }
   
 }
+// グローバル
+let overlay = null;
+// オーバーレイ生成時（等高線・マスク描画時のたびに）
+// overlay描画
+function showOverlay(url, bounds) {
+  if (overlay && map.hasLayer(overlay)) {
+    map.removeLayer(overlay);
+    overlay = null;
+  }
+  overlay = L.imageOverlay(url, bounds, {opacity:0.5});
+  overlay.addTo(map);
+}
+
+// OFF時の完全消去
+function hideOverlay() {
+   console.log("overlay消しましょう");
+  if (overlay && map.hasLayer(overlay)) {
+    map.removeLayer(overlay);
+    overlay = null;
+    console.log("overlay消した！");
+  }
+}
+
 
 function updateContourLOD() {
   // 1. 地図の現在表示範囲
@@ -396,14 +418,19 @@ function updateContourLOD() {
   const canvas = document.getElementById('contourCanvas');
   canvas.width = CANVAS_SIZE;
   canvas.height = CANVAS_SIZE;
-  const ctx = canvas.getContext('2d');
+  
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
   ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-
-  // 4. drawImageで縮小貼付（等高線の精度はほどほどでOK）
-  ctx.drawImage(img, sx, sy, sw, sh, 0, 0, CANVAS_SIZE, CANVAS_SIZE);
 
   if(!document.getElementById('sliderSwitch').checked)
     return;
+
+if(!document.getElementById('sliderSwitch').checked) {
+    hideOverlay();
+    return;
+  }
+    // 4. drawImageで縮小貼付（等高線の精度はほどほどでOK）
+  ctx.drawImage(img, sx, sy, sw, sh, 0, 0, CANVAS_SIZE, CANVAS_SIZE);
 
   // 5. 配列化
   let arr = [];
@@ -452,12 +479,23 @@ for(let y=0; y<CANVAS_SIZE; y++) {
  
 ctx.putImageData(iimgData, 0, 0); 
     // オーバーレイ
-   setTimeout(()=>{
+/*   setTimeout(()=>{
       if(overlay) map.removeLayer(overlay);
       overlay = L.imageOverlay(canvas.toDataURL('image/png'), bounds, {opacity:0.5}).addTo(map);
       isUpdating = false;
     }, 0);
-  
+*/ 
+  if(!document.getElementById('sliderSwitch').checked) {
+    hideOverlay();
+    return;
+  }
+  // canvasで描画 → overlay化
+//  const canvas = document.getElementById('contourCanvas');
+  // willReadFrequently最適化
+  // ...canvas描画処理...
+  const overlayUrl = canvas.toDataURL('image/png');
+  showOverlay(overlayUrl, map.getBounds());
+  //showOverlay(canvas.toDataURL('image/png'), bounds); 
 /*
   // 8. ImageOverlayで地図に載せる
   const overlayUrl = canvas.toDataURL('image/png');
@@ -555,8 +593,7 @@ function drawContourLowRes(arr, w, h) {
 /*-------------------------------------------------------------*/
 // 0（完全透明）～1（完全不透明）で指定
 
-L.imageOverlay(img.src, imageBounds, {opacity: 0.5  
-}).addTo(map);
+//L.imageOverlay(img.src, imageBounds, {opacity: 0.5  }).addTo(map);
     L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
       maxZoom: 17,
       attribution: '© OpenTopoMap (CC-BY-SA)'
@@ -772,25 +809,22 @@ function toggleSliderAndFlood(isOn) {
   document.getElementById('toukousen').style.display = isOn ? '' : 'none';
   document.getElementById('spnJS').style.display = isOn ? '' : 'none';
 
-  // 水没マスクON/OFF制御（例：canvasレイヤー表示切替）
- if(isOn) {
-    if(overlay && map.hasLayer(overlay)) {
-      // すでにONなら何もしない
-    } else if(overlay) {
-      overlay.addTo(map);
+  if (overlay) {
+   // …UI切り替え省略
+    if (!isOn) {
+      hideOverlay();
+      return;
     }
-  } else {
-    if(overlay && map.hasLayer(overlay)) {
-      map.removeLayer(overlay);
-    }
+    // isOn時は等高線処理
+    updateContourLOD();
   }
 }
 function toggleDamMode(isOn) {
   // 例: ダム堤体クリック受付・冠水範囲再描画など
   if(isOn) {
-    enableDamClickMode();
+    //enableDamClickMode();
   } else {
-    disableDamClickMode();
+    //disableDamClickMode();
   }
 }
  </script>

@@ -51,6 +51,7 @@ height: auto;      /* これが一番素直。これで子要素の高さにフ�
   width: 100%;
   height: 600px;      /* 必要に応じて */
 }
+#map.crosshair { cursor: crosshair !important; }
 @media (max-width: 900px) {
   .container {
     flex-direction: column;
@@ -107,7 +108,8 @@ height: auto;      /* これが一番素直。これで子要素の高さにフ�
     <div class="button-row">
     <button onclick="openGoogleMap(35.1608, 135.8703)">Google Maps を見る</button>
     <button onclick="openGsiMap(35.0116, 135.7681)">国土地理院地図　を見る</button>
-    </div>
+    <button onclick="clearLines()">ダム消去 </button>
+  </div>
     <div class="info" id="elevation">上池標高：-- m</div>
     <div class="info" id="drop">有効落差：-- m</div>
     <div class="info" id="energy">位置エネルギー：-- GWh</div>  
@@ -169,6 +171,7 @@ height: auto;      /* これが一番素直。これで子要素の高さにフ�
     <button onclick="toggleInputGroup()">ピン登録画面の 表示/非表示 切替</button>
   </div><br><br> 
 -->
+    <pre id="log"></pre>
     <div>
       <a class="btn" href="https://pgmatsuyama.github.io/biwako-denchi-kids/index.html" target="_blank">
          → びわ湖電池プロジェクト
@@ -667,63 +670,66 @@ let globalElev = null;
       return R * c;
     }
 
-    map.on('click', function (e) {
-      const lat = e.latlng.lat;
-      const lon = e.latlng.lng;
-      document.getElementById('coords').textContent = `緯度・経度：${lat.toFixed(6)}, ${lon.toFixed(6)}　　　`;
-      globalLat = e.latlng.lat;
-      globalLon = e.latlng.lng;
+// 新：関数として定義
+function normalClickHandler(e) {
+  const lat = e.latlng.lat;
+  const lon = e.latlng.lng;
+  document.getElementById('coords').textContent = `緯度・経度：${lat.toFixed(6)}, ${lon.toFixed(6)}　　　`;
+  globalLat = e.latlng.lat;
+  globalLon = e.latlng.lng;
 
-      fetch(`https://cyberjapandata2.gsi.go.jp/general/dem/scripts/getelevation.php?lon=${lon}&lat=${lat}&outtype=JSON`)
-        .then(res => res.json())
-        .then(data => {
-   const elev = parseFloat(data.elevation);
-   globalElev=elev;
-  document.getElementById('elevation').textContent = `上池標高：${elev.toFixed(1)} m`;
+  fetch(`https://cyberjapandata2.gsi.go.jp/general/dem/scripts/getelevation.php?lon=${lon}&lat=${lat}&outtype=JSON`)
+    .then(res => res.json())
+    .then(data => {
+      const elev = parseFloat(data.elevation);
+      globalElev = elev;
+      document.getElementById('elevation').textContent = `上池標高：${elev.toFixed(1)} m`;
 
-  const drop = elev - biwakoElevation;
-  document.getElementById('drop').textContent = `有効落差：${drop.toFixed(1)} m`;
+      const drop = elev - biwakoElevation;
+      document.getElementById('drop').textContent = `有効落差：${drop.toFixed(1)} m`;
 
-  const energyJoules = massTons * 1000 * 9.8 * drop;
-  const energyGWh = energyJoules / 3.6e12;
-  document.getElementById('energy').textContent = `位置エネルギー：${energyGWh.toFixed(3)} GWh`;
+      const energyJoules = massTons * 1000 * 9.8 * drop;
+      const energyGWh = energyJoules / 3.6e12;
+      document.getElementById('energy').textContent = `位置エネルギー：${energyGWh.toFixed(3)} GWh`;
 
-  const suiisa = (volume * 1000) / lakeArea;
-  document.getElementById('suii').textContent = `琵琶湖水位差：${suiisa.toFixed(3)} mm`;
+      const suiisa = (volume * 1000) / lakeArea;
+      document.getElementById('suii').textContent = `琵琶湖水位差：${suiisa.toFixed(3)} mm`;
 
-          let minDist = Infinity;
-          let nearestPoint = null;
-          lakeEdgePoints.forEach(pt => {
-            const d = calcDistance(lat, lon, pt.lat, pt.lng);
-            if (d < minDist) {
-              minDist = d;
-              nearestPoint = pt;
-            }
-          });
-          document.getElementById('distance').textContent = `最短距離：${minDist.toFixed(2)} km`;
+      let minDist = Infinity;
+      let nearestPoint = null;
+      lakeEdgePoints.forEach(pt => {
+        const d = calcDistance(lat, lon, pt.lat, pt.lng);
+        if (d < minDist) {
+          minDist = d;
+          nearestPoint = pt;
+        }
+      });
+      document.getElementById('distance').textContent = `最短距離：${minDist.toFixed(2)} km`;
 
-          if (lineLayer) map.removeLayer(lineLayer);
-          const nearestLatLng = L.latLng(nearestPoint.lat, nearestPoint.lng);
-          lineLayer = L.polyline([e.latlng, nearestLatLng], { color: 'blue' }).addTo(map);
+      if (lineLayer) map.removeLayer(lineLayer);
+      const nearestLatLng = L.latLng(nearestPoint.lat, nearestPoint.lng);
+      lineLayer = L.polyline([e.latlng, nearestLatLng], { color: 'blue' }).addTo(map);
 
-if (poolLayer) map.removeLayer(poolLayer);
-poolLayer = L.circle([lat, lon], {
-  radius: 200, // 単位はメートル
-  color: '#2196f3',
-  fillColor: '#bbdefb',
-  fillOpacity: 0.5
-}).addTo(map).bindPopup(`仮想ダムプール<br>半径150m`);
-          document.getElementById('lakeLevelBar').style.height = Math.min(100, suiisa) + '%';
-          document.getElementById('lakeValueLabel').textContent = suiisa.toFixed(1) + ' mm';
+      if (poolLayer) map.removeLayer(poolLayer);
+      poolLayer = L.circle([lat, lon], {
+        radius: 200,
+        color: '#2196f3',
+        fillColor: '#bbdefb',
+        fillOpacity: 0.5
+      }).addTo(map).bindPopup(`仮想ダムプール<br>半径150m`);
 
-          const energyBar = Math.min(100, (energyGWh / 100) * 100);
-          document.getElementById('energyLevelBar').style.height = energyBar + '%';
-          document.getElementById('energyValueLabel').textContent = energyGWh.toFixed(2) + ' GWh';
-        })
-        .catch(() => {
-          document.getElementById('elevation').textContent = `標高取得失敗`;
-        });
+      document.getElementById('lakeLevelBar').style.height = Math.min(100, suiisa) + '%';
+      document.getElementById('lakeValueLabel').textContent = suiisa.toFixed(1) + ' mm';
+
+      const energyBar = Math.min(100, (energyGWh / 100) * 100);
+      document.getElementById('energyLevelBar').style.height = energyBar + '%';
+      document.getElementById('energyValueLabel').textContent = energyGWh.toFixed(2) + ' GWh';
+    })
+    .catch(() => {
+      document.getElementById('elevation').textContent = `標高取得失敗`;
     });
+}
+map.on('click', normalClickHandler);
     var openedWindow;
     // GoogleフォームのURL（URLパラメータに各項目を渡すGET送信例）
     function submitForm() {
@@ -819,14 +825,286 @@ function toggleSliderAndFlood(isOn) {
     updateContourLOD();
   }
 }
+let damFirstPoint = null;
+let damTempLine = null;
+let damLines = [];
 function toggleDamMode(isOn) {
   // 例: ダム堤体クリック受付・冠水範囲再描画など
+  const mapDiv = document.getElementById('map');
+  damMode=isOn;
   if(isOn) {
-    //enableDamClickMode();
+    mapDiv.classList.add('crosshair');
+    mapDiv.classList.remove('grab');
+    // ダム建設インタラクションON
+    enableDamDrawing();
   } else {
-    //disableDamClickMode();
+    mapDiv.classList.remove('crosshair');
+    mapDiv.classList.add('grab');
+    // ダム建設インタラクションOFF
+    disableDamDrawing();
   }
 }
- </script>
+    let clickPoints = [];
+    let lines = [];
+    let lineLayers = [];
+let points = [];
+//let tempLine = null;
+let polyline = null;
+let polygon = null;
+const closeThreshold = 10; // ピクセル距離で判定
+
+// ダムクリック用
+function damClickHandler(e) {
+ let latlng = e.latlng;
+
+
+  // 最初の点 or 継続
+  clickPoints.push(latlng);
+ if (!firstPoint) {
+    firstPoint = e.latlng;
+    map.on('mousemove', damMoveHandler);
+  } else {
+  }
+
+  // Polylineで動的に線を描画
+  if (polyline) map.removeLayer(polyline);
+  polyline = L.polyline(clickPoints, {color: 'blue', weight: 3}).addTo(map);
+
+  // 閉じ判定（始点と終点が近ければPolygon化）
+  if (clickPoints.length > 2) {
+    let start = map.latLngToContainerPoint(clickPoints[0]);
+    let end = map.latLngToContainerPoint(latlng);
+    if (start.distanceTo(end) < closeThreshold) {
+      if (polygon) map.removeLayer(polygon);
+      polygon = L.polygon(clickPoints, {color: 'red', fillOpacity: 0.3}).addTo(map);
+
+      // 完了後、初期化（必要に応じて）
+      clickPoints = [];
+      if (polyline) map.removeLayer(polyline);
+    firstPoint = e.latlng;
+    map.on('mousemove', damMoveHandler);
+    firstPoint=null;
+    map.off('mousemove', damMoveHandler);
+    }
+  }
+
+}
+
+function damMoveHandler(e) {
+  if (clickPoints.length === 0) return;
+  let tempPoints = clickPoints.slice();
+  tempPoints.push(e.latlng); // マウスポインタを仮の次点とする
+
+  // 前の仮線を消してから再描画
+  if (tempLine) map.removeLayer(tempLine);
+  tempLine = L.polyline(tempPoints, {color: 'yellow', dashArray: '4', weight: 2}).addTo(map);
+/*
+ if (points.length === 0) return;
+
+  // マウスポインタ＋確定点を合わせて「一本の仮ライン」を構成
+  let displayPoints = points.slice();
+  let mousePt = [e.latlng.lat, e.latlng.lng];
+  let startPt = map.latLngToContainerPoint(points[0]);
+  let curPt = map.latLngToContainerPoint(mousePt);
+  let isClose = startPt.distanceTo(curPt) < closeThreshold;
+
+  if (isClose) {
+    displayPoints.push(points[0]); // 始点に吸着して閉じる
+  } else {
+    displayPoints.push(mousePt);
+  }
+
+  // 前の仮線を消してから再描画
+  if (tempLine) map.removeLayer(tempLine);
+  tempLine = L.polyline(displayPoints, {
+    color: isClose ? 'red' : 'blue',
+    dashArray: '4',
+    weight: 2
+  }).addTo(map);
+*/
+/*  if (damFirstPoint) {
+    if (damTempLine) map.removeLayer(damTempLine);
+    damTempLine = L.polyline([damFirstPoint, e.latlng], { color: 'orange', weight: 2, dashArray: '5,5' }).addTo(map);
+  }
+*/
+}
+
+// 例：ダム建設インタラクション有効化
+function enableDamDrawing() {
+  map.off('click', normalClickHandler); // 通常クリックを外す
+  map.on('click', damClickHandler);     // ダム建設クリックを有効化
+}
+function disableDamDrawing() {
+  map.off('click', damClickHandler);    // ダム建設クリックを外す
+  map.on('click', normalClickHandler);  // 通常クリックを有効化
+  if (damTempLine) {
+    map.removeLayer(damTempLine);
+    damTempLine = null;
+  }
+  damFirstPoint = null;
+  map.off('mousemove', damMoveHandler);
+}
+
+
+    function drawTempLine(e) {
+      if (firstPoint) {
+        // 前の仮線を削除
+        if (tempLine) map.removeLayer(tempLine);
+        // 新しい仮線を描画
+        tempLine = L.polyline([firstPoint, e.latlng], {color:'blue',weight:2,dashArray:'5,5'}).addTo(map);
+      }
+    }
+    let tempLine,firstPoint=null;
+function           damCklick(e)
+{
+  // ダム建設モードの時だけ下記を実行
+ if (points.length === 0) {
+    points.push([e.latlng.lat, e.latlng.lng]);
+    return;
+  }
+
+  // 閉じ判定
+  let startPt = map.latLngToContainerPoint(points[0]);
+  let curPt = map.latLngToContainerPoint([e.latlng.lat, e.latlng.lng]);
+  let isClose = startPt.distanceTo(curPt) < closeThreshold;
+
+  if (isClose && points.length > 2) {
+    // Polygon確定
+    if (polygon) map.removeLayer(polygon);
+    polygon = L.polygon(points, {color: 'red', fillOpacity: 0.4}).addTo(map);
+    points = [];
+    if (tempLine) map.removeLayer(tempLine);
+    return;
+  } else {
+    points.push([e.latlng.lat, e.latlng.lng]);
+  }
+}
+
+/*  if (!firstPoint) {
+    firstPoint = e.latlng;
+    map.on('mousemove', damMoveHandler);
+  } else {
+    let secondPoint = e.latlng;
+    let line = L.polyline([firstPoint, secondPoint], {color:'green',weight:5}).addTo(map);
+    realLines.push(line);
+    if (tempLine) {
+      map.removeLayer(tempLine);
+      tempLine = null;
+    }
+    firstPoint = null;
+    map.off('mousemove', damMoveHandler);
+  }
+*/
+
+   function clearLines() { //map.removeLayer(damTempLine);
+      // 地図上の線分をすべて削除
+      realLines.forEach(line => map.removeLayer(line));
+//      lineLayers.forEach(line => map.removeLayer(line));
+      lineLayers = [];
+      lines = [];
+      clickPoints = [];
+      document.getElementById('log').textContent = 'ダム線分リスト:\n[]';
+    }
+/*
+おまけ：Polygon版（外周全部）
+for(let i = 0; i < polyPoints.length; i++) {
+  let j = (i + 1) % polyPoints.length;
+  markDamLineAs127(
+    polyPoints[i].lat, polyPoints[i].lng,
+    polyPoints[j].lat, polyPoints[j].lng,
+    map2D, waterVal
+  );
+}*/
+
+
+//1. 線分の両端（緯度経度）を2Dマップ座標(x, y)に変換
+function latLngToXY(lat, lng, latMin, latMax, lngMin, lngMax, width, height) {
+  const x = Math.round((lng - lngMin) / (lngMax - lngMin) * (width - 1));
+  const y = Math.round((latMax - lat) / (latMax - latMin) * (height - 1));
+  return [x, y];
+}
+// 2. Bresenhamのアルゴリズムで線分上のセルをすべて列挙
+function bresenhamLine(x0, y0, x1, y1) {
+  const points = [];
+  let dx = Math.abs(x1 - x0), dy = Math.abs(y1 - y0);
+  let sx = (x0 < x1) ? 1 : -1;
+  let sy = (y0 < y1) ? 1 : -1;
+  let err = dx - dy;
+
+  while(true) {
+    points.push([x0, y0]);
+    if ((x0 === x1) && (y0 === y1)) break;
+    let e2 = 2 * err;
+    if (e2 > -dy) { err -= dy; x0 += sx; }
+    if (e2 < dx)  { err += dx; y0 += sy; }
+  }
+  return points;
+}
+
+//3. 各セルについて「水セル（例えば値1）」なら-127（ダムセル）に置換
+
+function markDamLineAs127(lat1, lng1, lat2, lng2, map2D, waterVal = 1, damVal = -127,
+                          latMin, latMax, lngMin, lngMax, width, height) {
+  // 1. 緯度経度 → 画像座標
+  const [x1, y1] = latLngToXY(lat1, lng1, latMin, latMax, lngMin, lngMax, width, height);
+  const [x2, y2] = latLngToXY(lat2, lng2, latMin, latMax, lngMin, lngMax, width, height);
+
+  // 2. 線上のセル列挙
+  const linePixels = bresenhamLine(x1, y1, x2, y2);
+
+  // 3. 水セルならダムセルに
+  for (const [x, y] of linePixels) {
+    if (x < 0 || x >= width || y < 0 || y >= height) continue; // 範囲外はスキップ
+    if (map2D[y][x] === waterVal) {
+      map2D[y][x] = damVal;
+    }
+  }
+}
+//4. Polygonの場合は外周すべての線分で繰り返し呼び出す
+function markPolygonEdgesAsDam(polyPoints, map2D, waterVal, damVal, ...geoParams) {
+  for(let i = 0; i < polyPoints.length; i++) {
+    let j = (i + 1) % polyPoints.length;
+    markDamLineAs127(
+      polyPoints[i][0], polyPoints[i][1],
+      polyPoints[j][0], polyPoints[j][1],
+      map2D, waterVal, damVal, ...geoParams
+    );
+  }
+}
+
+
+/*
+// 入力: lat, lng
+// 画像範囲:
+const latMin = 34.7500;
+const latMax = 35.7500;
+const lngMin = 135.7500;
+const lngMax = 136.5000;
+
+// マップサイズ
+const width = 6750;
+const height = 9000;
+
+// 計算（画像座標原点が左上の場合）
+const x = Math.round((lng - lngMin) / (lngMax - lngMin) * (width - 1));
+const y = Math.round((latMax - lat) / (latMax - latMin) * (height - 1));
+x: 左端（西）が0、右端（東）がwidth-1
+
+y: 上端（北）が0、下端（南）がheight-1
+
+
+// 入力: x, y
+const lng = lngMin + (x / (width - 1)) * (lngMax - lngMin);
+const lat = latMax - (y / (height - 1)) * (latMax - latMin);
+x, yからlat/lngを取得
+
+
+
+
+*/
+
+
+
+</script>
 </body>
 </html>

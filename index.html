@@ -101,6 +101,7 @@ height: auto;      /* これが一番素直。これで子要素の高さにフ�
   <div class="map-block">
     <div id="map"></div>
     <canvas id="contourCanvas" width="400" height="400" style="display:none"></canvas>
+    <imgcanvas id="contourCanvas" width="6750" height="9000" style="display:none"></canvas>
   </div>
   <div class="result-block">
     <div>結果の表示エリア</div>
@@ -108,7 +109,7 @@ height: auto;      /* これが一番素直。これで子要素の高さにフ�
     <div class="button-row">
     <button onclick="openGoogleMap(35.1608, 135.8703)">Google Maps を見る</button>
     <button onclick="openGsiMap(35.0116, 135.7681)">国土地理院地図　を見る</button>
-    <button onclick="clearLines()">ダム消去 </button>
+    <button id="DAMclearPB" style="display:none" onclick="clearLines()">ダム消去 </button>
   </div>
     <div class="info" id="elevation">上池標高：-- m</div>
     <div class="info" id="drop">有効落差：-- m</div>
@@ -548,9 +549,29 @@ function addmarkers()
 let arr = null, imgWidth = 0, imgHeight = 0;
 const img = new Image();
 img.src = 'images/BIWAKOALL8.PNG';
-const targetW = 650, targetH = 900;
+//const targetW = 650, targetH = 900;
+const imgcanvas = document.createElement('canvas');
+const imgctx = imgcanvas.getContext('2d');
+let map2D = [];  // 2D配列化  R成分のみ
 
 img.onload = function() {
+    imgcanvas.width = img.width;
+  imgcanvas.height = img.height;
+  imgctx.drawImage(img, 0, 0);
+  const imageData = imgctx.getImageData(0, 0, img.width, img.height).data;
+
+  // 2D配列化
+  for (let y = 0; y < img.height; y++) {
+    let row = [];
+    for (let x = 0; x < img.width; x++) {
+      // グレースケールならRのみでOK
+      let i = (y * img.width + x) * 4;
+      let val = imageData[i]; // R成分のみ
+      row.push(val);
+    }
+    map2D.push(row);
+  }
+
 /*  // 縮小Canvasにdraw
   let tmp = document.createElement('canvas');
   tmp.width = targetW;
@@ -832,6 +853,7 @@ function toggleDamMode(isOn) {
   // 例: ダム堤体クリック受付・冠水範囲再描画など
   const mapDiv = document.getElementById('map');
   damMode=isOn;
+  document.getElementById('DAMclearPB').style.display = isOn ? '' : 'none';
   if(isOn) {
     mapDiv.classList.add('crosshair');
     mapDiv.classList.remove('grab');
@@ -887,6 +909,12 @@ function damClickHandler(e) {
     map.off('mousemove', damMoveHandler);
     }
   }
+ // 確定後、仮線は必ず消す
+  if (tempLine) {
+    map.removeLayer(tempLine);
+    tempLine = null;
+  }
+  firstPoint = null; // リセット
 
 }
 
@@ -944,66 +972,58 @@ function disableDamDrawing() {
   damFirstPoint = null;
   map.off('mousemove', damMoveHandler);
 }
+let tempLine = null;
+let firstPoint = null;
 
+function drawTempLine(e) {
+  if (!firstPoint) return;
 
-    function drawTempLine(e) {
-      if (firstPoint) {
-        // 前の仮線を削除
-        if (tempLine) map.removeLayer(tempLine);
-        // 新しい仮線を描画
-        tempLine = L.polyline([firstPoint, e.latlng], {color:'blue',weight:2,dashArray:'5,5'}).addTo(map);
-      }
-    }
-    let tempLine,firstPoint=null;
-function           damCklick(e)
-{
-  // ダム建設モードの時だけ下記を実行
- if (points.length === 0) {
-    points.push([e.latlng.lat, e.latlng.lng]);
-    return;
+  // 前の仮線を消す（ここが肝心！）
+  if (tempLine) {
+    map.removeLayer(tempLine);
+    tempLine = null;
   }
 
-  // 閉じ判定
-  let startPt = map.latLngToContainerPoint(points[0]);
-  let curPt = map.latLngToContainerPoint([e.latlng.lat, e.latlng.lng]);
-  let isClose = startPt.distanceTo(curPt) < closeThreshold;
-
-  if (isClose && points.length > 2) {
-    // Polygon確定
-    if (polygon) map.removeLayer(polygon);
-    polygon = L.polygon(points, {color: 'red', fillOpacity: 0.4}).addTo(map);
-    points = [];
-    if (tempLine) map.removeLayer(tempLine);
-    return;
-  } else {
-    points.push([e.latlng.lat, e.latlng.lng]);
-  }
+  // 新しい仮線を描画
+  tempLine = L.polyline([firstPoint, e.latlng], {
+    color: 'blue',
+    weight: 2,
+    dashArray: '5,5'
+  }).addTo(map);
 }
+/*
+// 例: ダム建設モードで
+map.on('mousemove', function(e) {
+  drawTempLine(e);
+});
 
-/*  if (!firstPoint) {
+// クリックしたら確定
+map.on('click', function(e) {
+  if (!firstPoint) {
     firstPoint = e.latlng;
-    map.on('mousemove', damMoveHandler);
-  } else {
-    let secondPoint = e.latlng;
-    let line = L.polyline([firstPoint, secondPoint], {color:'green',weight:5}).addTo(map);
-    realLines.push(line);
-    if (tempLine) {
-      map.removeLayer(tempLine);
-      tempLine = null;
-    }
-    firstPoint = null;
-    map.off('mousemove', damMoveHandler);
+    return;
   }
-*/
 
-   function clearLines() { //map.removeLayer(damTempLine);
+  // 線分確定（or多角形の点追加など）
+  // ...省略...
+
+  // 確定後、仮線は必ず消す
+  if (tempLine) {
+    map.removeLayer(tempLine);
+    tempLine = null;
+  }
+  firstPoint = null; // リセット
+});
+*/
+   function clearLines() { 
+    map.removeLayer(polygon);
       // 地図上の線分をすべて削除
-      realLines.forEach(line => map.removeLayer(line));
+      points.forEach(points => map.removeLayer(points));
 //      lineLayers.forEach(line => map.removeLayer(line));
-      lineLayers = [];
+      points = [];
       lines = [];
       clickPoints = [];
-      document.getElementById('log').textContent = 'ダム線分リスト:\n[]';
+//      document.getElementById('log').textContent = 'ダム線分リスト:\n[]';
     }
 /*
 おまけ：Polygon版（外周全部）
@@ -1014,7 +1034,29 @@ for(let i = 0; i < polyPoints.length; i++) {
     polyPoints[j].lat, polyPoints[j].lng,
     map2D, waterVal
   );
-}*/
+}
+  
+ // 1. 地図の現在表示範囲
+  const bounds = map.getBounds();
+  const nw = bounds.getNorthWest();
+  const se = bounds.getSouthEast();
+
+  // 2. 地理座標→画像ピクセル変換
+  function latlngToImgXY(lat, lng) {
+    const latMin = imageBounds[0][0], latMax = imageBounds[1][0];
+    const lngMin = imageBounds[0][1], lngMax = imageBounds[1][1];
+    const y = Math.round((latMax - lat) / (latMax - latMin) * img.naturalHeight);
+    const x = Math.round((lng - lngMin) / (lngMax - lngMin) * img.naturalWidth);
+    return {x, y};
+  }
+  const p1 = latlngToImgXY(nw.lat, nw.lng);
+  const p2 = latlngToImgXY(se.lat, se.lng);
+  const sx = Math.min(p1.x, p2.x), sy = Math.min(p1.y, p2.y);
+  const sw = Math.abs(p1.x - p2.x), sh = Math.abs(p1.y - p2.y);
+
+const img = new Image();
+img.src = 'images/BIWAKOALL8.PNG';
+*/
 
 
 //1. 線分の両端（緯度経度）を2Dマップ座標(x, y)に変換
@@ -1040,9 +1082,7 @@ function bresenhamLine(x0, y0, x1, y1) {
   }
   return points;
 }
-
 //3. 各セルについて「水セル（例えば値1）」なら-127（ダムセル）に置換
-
 function markDamLineAs127(lat1, lng1, lat2, lng2, map2D, waterVal = 1, damVal = -127,
                           latMin, latMax, lngMin, lngMax, width, height) {
   // 1. 緯度経度 → 画像座標
@@ -1061,18 +1101,100 @@ function markDamLineAs127(lat1, lng1, lat2, lng2, map2D, waterVal = 1, damVal = 
   }
 }
 //4. Polygonの場合は外周すべての線分で繰り返し呼び出す
-function markPolygonEdgesAsDam(polyPoints, map2D, waterVal, damVal, ...geoParams) {
+function markPolygonEdgesAsDam(polyPoints, map2D, waterVal, damVal){//, ...geoParams) {
   for(let i = 0; i < polyPoints.length; i++) {
     let j = (i + 1) % polyPoints.length;
     markDamLineAs127(
       polyPoints[i][0], polyPoints[i][1],
-      polyPoints[j][0], polyPoints[j][1],
-      map2D, waterVal, damVal, ...geoParams
+      polyPoints[j][0], polyPoints[j][1]//,      map2D, waterVal, damVal, ...geoParams
     );
   }
 }
+//----------------------------------------------------------
+//1. Polygon内判定（点がPolygon内かどうか）
+// point: [lat, lng], polygon: array of [lat, lng]
+function isPointInPolygon(point, polygon) {
+  let x = point[1], y = point[0]; // lng, lat
+  let inside = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    let xi = polygon[i][1], yi = polygon[i][0];
+    let xj = polygon[j][1], yj = polygon[j][0];
+    let intersect = ((yi > y) !== (yj > y)) &&
+                    (x < (xj - xi) * (y - yi) / (yj - yi + 1e-12) + xi);
+    if (intersect) inside = !inside;
+  }
+  return inside;
+}
+//
+//2. Polyline上（線分上）判定
+// point: [lat, lng], segA, segB: [lat, lng]
+function isPointOnLineSegment(point, segA, segB, tolerance = 1e-5) {
+  function dist(a, b) {
+    return Math.sqrt(Math.pow(a[0]-b[0],2) + Math.pow(a[1]-b[1],2));
+  }
+  const d1 = dist(point, segA);
+  const d2 = dist(point, segB);
+  const d = dist(segA, segB);
+  return Math.abs((d1 + d2) - d) < tolerance;
+}
 
+// --- 1. 緯度経度→画像座標(x, y)に変換 ---
+function latLngToXY(lat, lng, latMin, latMax, lngMin, lngMax, width, height) {
+  const x = Math.round((lng - lngMin) / (lngMax - lngMin) * (width - 1));
+  const y = Math.round((latMax - lat) / (latMax - latMin) * (height - 1));
+  return [x, y];
+}
 
+// 全頂点を画像座標へ
+const polyXY = polygon.map(([lat, lng]) =>
+  latLngToXY(lat, lng, latMin, latMax, lngMin, lngMax, width, height)
+);
+
+// --- 2. 外接矩形を求める ---
+const xs = polyXY.map(p => p[0]);
+const ys = polyXY.map(p => p[1]);
+const minX = Math.floor(Math.min(...xs));
+const maxX = Math.ceil(Math.max(...xs));
+const minY = Math.floor(Math.min(...ys));
+const maxY = Math.ceil(Math.max(...ys));
+
+// --- 3. 点がPolygon内かどうかを判定する関数（even-odd/ray-casting法）---
+function isPointInPolygon(x, y, polyXY) {
+  let inside = false;
+  for (let i = 0, j = polyXY.length - 1; i < polyXY.length; j = i++) {
+    let xi = polyXY[i][0], yi = polyXY[i][1];
+    let xj = polyXY[j][0], yj = polyXY[j][1];
+    let intersect =
+      ((yi > y) !== (yj > y)) &&
+      (x < (xj - xi) * (y - yi) / (yj - yi + 1e-12) + xi);
+    if (intersect) inside = !inside;
+  }
+  return inside;
+}
+
+// 2D配列全体に適用するフロー
+
+function doPolyAri(){
+ for (let y = minY; y <= maxY; y++) {
+   for (let x = minX; x <= maxX; x++) {
+    // セル中心座標→緯度経度に変換
+    let [lat, lng] = xyToLatLng(x, y);//, ...);
+    // Polygon内判定
+    if (isPointInPolygon([lat, lng], polygon)) {
+      // Polygon内処理
+    }
+    // Polygonの各辺でPolyline上判定
+    for (let i = 0; i < polygon.length; i++) {
+      let j = (i + 1) % polygon.length;
+      if (isPointOnLineSegment([lat, lng], polygon[i], polygon[j], tolerance)) {
+        // Polyline上処理（ダムセル等）
+      }
+    }
+  }
+ }
+}
+
+//----------------------------------------------------------
 /*
 // 入力: lat, lng
 // 画像範囲:

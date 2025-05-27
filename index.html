@@ -875,7 +875,8 @@ function toggleDamMode(isOn) {
   document.getElementById('doDAMPB').style.display = isOn ? '' : 'none';
 
   if(isOn) {
-    mapDiv.classList.add('crosshair');
+    if (poolLayer) map.removeLayer(poolLayer);    mapDiv.classList.add('crosshair');
+    if (lineLayer) map.removeLayer(lineLayer);
     mapDiv.classList.remove('grab');
     // ダム建設インタラクションON
     enableDamDrawing();

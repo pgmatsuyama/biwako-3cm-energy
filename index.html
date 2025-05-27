@@ -130,6 +130,12 @@ height: auto;      /* これが一番素直。これで子要素の高さにフ�
       </div>
       <div class="bar-label">エネルギー（GWh）</div>
     </div>
+    <div class="info" id="damH">ダム高さ：-- m</div>
+    <div class="info" id="damL">ダム長さ：-- m</div>
+    <div class="info" id="koA">ダム湖面積：-- m</div>
+    <div class="info" id="koV">ダム湖体積：-- m</div>
+    <div class="info" id="koL">ダム湖最深：-- m</div>
+
   </div>
 </div>
 <!--<canvas id="contourCanvas" width="6750" height="9000" style="display:none"></canvas> -->
@@ -1172,6 +1178,7 @@ function isPointOnLineSegment(point, segA, segB, tolerance = 1e-5) {
   const d = dist(segA, segB);
   return Math.abs((d1 + d2) - d) < tolerance;
 }
+var damH,damL,koA,KoV,koL;
 
 // --- 1. 緯度経度→画像座標(x, y)に変換 ---
 function latLngToXY(lat, lng, latMin, latMax, lngMin, lngMax, width, height) {
@@ -1243,6 +1250,7 @@ const lngMax = 136.5000; // 東端
  }        document.getElementById('log').textContent =
           'ダム線分リスト:\n' + JSON.stringify(clickPoints, null, 2);
  let slidvalue= document.getElementById('altSlider').value;
+  damH=0; damL=0; koA=0; koV=0,koL=0;
  for(let i = 0; i < clickPoints.length - 1; i++) {
   const ptA = [clickPoints[i].lat, clickPoints[i].lng];
   const ptB = [clickPoints[i+1].lat, clickPoints[i+1].lng];
@@ -1253,7 +1261,6 @@ const lngMax = 136.5000; // 東端
 
   // 2. 線分セルの抽出（Bresenham法）
   const linePixels = bresenhamLine(x1, y1, x2, y2);
-
   // 3. 各セルについてmap2Dをダム値（例: -127）に
   for (const [x, y] of linePixels) {
     if (x < 0 || x >= img.width || y < 0 || y >= img.height) continue; // 範囲外ガード
@@ -1263,6 +1270,10 @@ const lngMax = 136.5000; // 東端
   // return; // ここで早期リターンなど安全装置
     }
     if(map2D[y][x] <= slidvalue){
+      damL+=1;
+      if (damH===0 || damH>map2D[y][x] ){
+        damH=map2D[y][x];         //ダム
+      }
       map2D[y][x] = 0x81;         //ダム
     }
   }
@@ -1285,11 +1296,25 @@ for (let y = minY; y <= maxY; y++) {
       if (map2D[y][x] != 0x81 && map2D[y][x] <= slidvalue) {
         // ここが「水没セル」
         // 例: map2D[y][x] = -10; // 水深10mで塗る、色分け用のマークを付与など
+        koA+=1;
+        koV = koV+map2D[y][x]; 
+        if (koL===0 || koL> map2D[y][x] ){
+         koL=map2D[y][x];         //ダム
+        }
         map2D[y][x] = (200-(slidvalue-map2D[y][x]))&0xff; 
       }
     }
   }
 }
+function formatNumber(num, digits = 1) {
+  return Number(num).toFixed(digits).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
+      document.getElementById('damH').textContent = 'ダム高さ：'+formatNumber(damH*10,0) + 'm';
+      document.getElementById('damL').textContent = 'ダム長さ：'+formatNumber(damL*10,0) + 'm';
+      document.getElementById('koA').textContent = 'ダム湖面積：'+formatNumber(koA*100,0) + '㎡';
+      document.getElementById('koV').textContent = 'ダム湖体積：'+formatNumber(koV*100*10,0) + '㎥';
+      document.getElementById('koL').textContent = 'ダム湖最深：'+formatNumber(koL*10,0) + 'm';
 
 
 //---------------------------------------------------

@@ -130,13 +130,13 @@ height: auto;      /* これが一番素直。これで子要素の高さにフ�
       </div>
       <div class="bar-label">エネルギー（GWh）</div>
     </div>
-    <div class="info" id="lH">標高:-- m</div>
+    <div class="info" id="lH">標高　　　:-- m</div>
     <div class="info" id="damH">ダム高さ：-- m</div>
     <div class="info" id="damL">ダム長さ：-- m</div>
     <div class="info" id="koA">ダム湖面積：-- m</div>
     <div class="info" id="koV">ダム湖体積：-- m</div>
     <div class="info" id="koL">ダム湖最深：-- m</div>
-    <div class="info" id="enegy">エネルギー（GWh）：-- m</div>
+    <div class="info" id="enegy">エネルギー（GWh）：-- GWh</div>
 
   </div>
 </div>
@@ -724,6 +724,15 @@ function normalClickHandler(e) {
 
       const suiisa = (volume * 1000) / lakeArea;
       document.getElementById('suii').textContent = `琵琶湖水位差：${suiisa.toFixed(3)} mm`;
+//---20250527
+      const bottomElevation = 83;
+
+//const h = elevation - bottomElevation;
+const h=drop;
+if (h <= 0) return;
+
+const area = volume / h;
+const radius = Math.sqrt(area / Math.PI)+50; // 単位：m
 
       let minDist = Infinity;
       let nearestPoint = null;
@@ -742,7 +751,7 @@ function normalClickHandler(e) {
 
       if (poolLayer) map.removeLayer(poolLayer);
       poolLayer = L.circle([lat, lon], {
-        radius: 200,
+        radius: radius, //200,
         color: '#2196f3',
         fillColor: '#bbdefb',
         fillOpacity: 0.5
@@ -1313,12 +1322,12 @@ function formatNumber(num, digits = 1) {
   return Number(num).toFixed(digits).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 const ene = ((slidvalue*10-83)*(koV*100)*9.8)/(3.6E12);
-      document.getElementById('lH').textContent = '標高'+formatNumber(slidvalue*10,0) + 'm';
-     document.getElementById('damH').textContent = 'ダム高さ：'+formatNumber(damH*10,0) + 'm';
-      document.getElementById('damL').textContent = 'ダム長さ：'+formatNumber(damL*10,0) + 'm';
+      document.getElementById('lH').textContent =  '標高　　：'+formatNumber(slidvalue*10,0) + 'm';
+     document.getElementById('damH').textContent = 'ダム堤高：'+formatNumber((slidvalue-damH)*10,0) + 'm';
+      document.getElementById('damL').textContent ='ダム長さ：'+formatNumber(damL*10,0) + 'm';
       document.getElementById('koA').textContent = 'ダム湖面積：'+formatNumber(koA*100,0) + '㎡';
       document.getElementById('koV').textContent = 'ダム湖体積：'+formatNumber(koV*100,0) + '㎥';
-      document.getElementById('koL').textContent = 'ダム湖最深：'+formatNumber((koL)*10,0) + 'm';
+      document.getElementById('koL').textContent = 'ダム湖最深：'+formatNumber((slidvalue-koL)*10,0) + 'm';
       document.getElementById('enegy').textContent = 'エネルギー（GWh）：'+formatNumber((ene),2) + 'GWh';
 //  <div class="info" id="enegy">エネルギー（GWh）：-- m</div>
 
@@ -1409,6 +1418,12 @@ L.imageOverlay(link.href , imageBounds, {
 }).addTo(map);
 
 clearLines(); //gamen clear
+document.getElementById('damSwitch').checked=0;
+  // ダム建設モード（堤体指定・flood fillなど）
+  toggleDamMode(document.getElementById('damSwitch').checked);
+
+
+
 }
 //---------------------------------------------------
 

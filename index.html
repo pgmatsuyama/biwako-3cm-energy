@@ -1171,6 +1171,11 @@ function latLngToXY(lat, lng, latMin, latMax, lngMin, lngMax, width, height) {
   const y = Math.round((latMax - lat) / (latMax - latMin) * (height - 1));
   return [x, y];
 }
+function XY2latlng(x, y, latMin, latMax, lngMin, lngMax, width, height) {
+  const lng = lngMin + (x / (width - 1)) * (lngMax - lngMin);
+  const lat = latMax - (y / (height - 1)) * (latMax - latMin);
+  return [lat, lng];
+}
 
 // 全頂点を画像座標へ
 const polyXY = polygon.map (([lat, lng]) =>
@@ -1321,10 +1326,17 @@ for (let y = minY; y <= maxY; y++) {
     if (map2D[y][x]<=0 || map2D[y][x]>=128) {
       // 例: map2D[y][x]の値でグレースケール or カラー
       let val = map2D[y][x];
-      outImage.data[outIdx  ] = val;
-      outImage.data[outIdx+1] = val;
-      outImage.data[outIdx+2] = val;
-      outImage.data[outIdx+3] = 255; // 不透明
+      if(val==0x81){
+        outImage.data[outIdx  ] = val;
+        outImage.data[outIdx+1] = val;
+        outImage.data[outIdx+2] = val;
+      }else{
+        val=150+(val-200);
+        outImage.data[outIdx  ] = val;
+        outImage.data[outIdx+1] = val;
+        outImage.data[outIdx+2] = 255;
+      }
+        outImage.data[outIdx+3] = 255; // 不透明
     } else {
       outImage.data[outIdx  ] = 0;
       outImage.data[outIdx+1] = 0;
@@ -1342,6 +1354,22 @@ const link = document.createElement('a');
 link.href = outCanvas.toDataURL('image/png');
 link.download = 'lake_clip.png';
 link.click();
+const imageBounds = [
+  [latMin, lngMin], // 南西（左下）
+  [latMax, lngMax]  // 北東（右上）
+];
+//let lng1,lat1,lng2,lat2;
+//XY2latlng(x, y, latMin, latMax, lngMin, lngMax, width, height)
+  const [lat1,lng1] = XY2latlng(minX, minY, latMin, latMax, lngMin, lngMax, img.width, img.height);
+  const [lat2,lng2] = XY2latlng(maxX, maxY, latMin, latMax, lngMin, lngMax, img.width, img.height);
+  imageBounds[0]=[lat1,lng1 ];
+  imageBounds[1]=[lat2,lng2] ;
+L.imageOverlay(link.href , imageBounds, {
+
+  opacity: 1
+}).addTo(map);
+
+clearLines(); //gamen clear
 }
 //---------------------------------------------------
 

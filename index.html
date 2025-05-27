@@ -871,7 +871,7 @@ function toggleDamMode(isOn) {
 }
     let clickPoints = [];
     let lines = [];
-    let lineLayers = [];
+//    let lineLayers = [];
 let points = [];
 //let tempLine = null;
 let polyline = null;
@@ -906,6 +906,7 @@ function damClickHandler(e) {
       // 完了後、初期化（必要に応じて）
      // clickPoints = [];
       if (polyline) map.removeLayer(polyline);
+      polyline=null;
       firstPoint = e.latlng;
       map.on('mousemove', damMoveHandler);
       firstPoint=null;
@@ -919,6 +920,32 @@ function damClickHandler(e) {
   }
   firstPoint = null; // リセット
 
+}
+
+function clearLines() { 
+    if(polygon){
+      map.removeLayer(polygon);
+      polygon=[];
+    }
+    if(tempLine){
+      map.removeLayer(tempLine);
+      polyline=[];
+    }
+    if(polyline){
+      map.removeLayer(polyline);
+      polyline=[];
+    }
+                  // 地図上の線分をすべて削除
+       //   clickPoints.forEach(clickPoints => map.removeLayer(clickPoints));
+      clickPoints=[];
+    lines = [];
+      clickPoints = [];
+      firstPoint=null;
+if (tempLine) {
+    map.removeLayer(tempLine);
+    tempLine = null;
+  }
+//      document.getElementById('log').textContent = 'ダム線分リスト:\n[]';
 }
 
 function damMoveHandler(e) {
@@ -993,25 +1020,6 @@ function drawTempLine(e) {
     weight: 2,
     dashArray: '5,5'
   }).addTo(map);
-}
-
-function clearLines() { 
-    map.removeLayer(polygon);
-   map.removeLayer(tempLine);
-      // 地図上の線分をすべて削除
-      points.forEach(points => map.removeLayer(points));
-//      lineLayers.forEach(line => map.removeLayer(line));
-      points = [];
-      tempPoints.forEach(tempPoints => map.removeLayer(tempPoints));
-      tempPoints=[];
-      lines = [];
-      clickPoints = [];
-      firstPoint=null;
-if (tempLine) {
-    map.removeLayer(tempLine);
-    tempLine = null;
-  }
-//      document.getElementById('log').textContent = 'ダム線分リスト:\n[]';
 }
 
 /*
@@ -1255,7 +1263,7 @@ const lngMax = 136.5000; // 東端
   // return; // ここで早期リターンなど安全装置
     }
     if(map2D[y][x] <= slidvalue){
-      map2D[y][x] = -127;         //ダム
+      map2D[y][x] = 0x81;         //ダム
     }
   }
 }
@@ -1274,10 +1282,10 @@ let maxY = Math.ceil(Math.max(...ys));
 for (let y = minY; y <= maxY; y++) {
   for (let x = minX; x <= maxX; x++) {
      if (isPointInPolygon(x, y, polyXY)) {
-      if (map2D[y][x] != -127 && map2D[y][x] <= slidvalue) {
+      if (map2D[y][x] != 0x81 && map2D[y][x] <= slidvalue) {
         // ここが「水没セル」
         // 例: map2D[y][x] = -10; // 水深10mで塗る、色分け用のマークを付与など
-        map2D[y][x] = (200-(slidvalue-map2D[y][x])*5)&0xff; 
+        map2D[y][x] = (200-(slidvalue-map2D[y][x]))&0xff; 
       }
     }
   }
@@ -1323,15 +1331,15 @@ const outImage = outCtx.createImageData(outW, outH);
 for (let y = minY; y <= maxY; y++) {
   for (let x = minX; x <= maxX; x++) {
     const outIdx = ((y-minY)*outW + (x-minX)) * 4;
-    if (map2D[y][x]<=0 || map2D[y][x]>=128) {
+    if (map2D[y][x]==0x81 || map2D[y][x]>=128) {
       // 例: map2D[y][x]の値でグレースケール or カラー
       let val = map2D[y][x];
       if(val==0x81){
-        outImage.data[outIdx  ] = val;
-        outImage.data[outIdx+1] = val;
-        outImage.data[outIdx+2] = val;
+        outImage.data[outIdx  ] = 0;
+        outImage.data[outIdx+1] = 0;
+        outImage.data[outIdx+2] = 0;
       }else{
-        val=150+(val-200);
+        val=150+(val-200)*5;
         outImage.data[outIdx  ] = val;
         outImage.data[outIdx+1] = val;
         outImage.data[outIdx+2] = 255;

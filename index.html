@@ -130,11 +130,13 @@ height: auto;      /* これが一番素直。これで子要素の高さにフ�
       </div>
       <div class="bar-label">エネルギー（GWh）</div>
     </div>
+    <div class="info" id="lH">標高:-- m</div>
     <div class="info" id="damH">ダム高さ：-- m</div>
     <div class="info" id="damL">ダム長さ：-- m</div>
     <div class="info" id="koA">ダム湖面積：-- m</div>
     <div class="info" id="koV">ダム湖体積：-- m</div>
     <div class="info" id="koL">ダム湖最深：-- m</div>
+    <div class="info" id="enegy">エネルギー（GWh）：-- m</div>
 
   </div>
 </div>
@@ -1261,7 +1263,8 @@ const lngMax = 136.5000; // 東端
 
   // 2. 線分セルの抽出（Bresenham法）
   const linePixels = bresenhamLine(x1, y1, x2, y2);
-  // 3. 各セルについてmap2Dをダム値（例: -127）に
+  const level = parseInt(document.getElementById('altSlider').value);
+// 3. 各セルについてmap2Dをダム値（例: -127）に
   for (const [x, y] of linePixels) {
     if (x < 0 || x >= img.width || y < 0 || y >= img.height) continue; // 範囲外ガード
     //    console.log('x:', x, 'y:', y);
@@ -1297,7 +1300,7 @@ for (let y = minY; y <= maxY; y++) {
         // ここが「水没セル」
         // 例: map2D[y][x] = -10; // 水深10mで塗る、色分け用のマークを付与など
         koA+=1;
-        koV = koV+map2D[y][x]; 
+        koV +=((slidvalue+1)-(map2D[y][x])); 
         if (koL===0 || koL> map2D[y][x] ){
          koL=map2D[y][x];         //ダム
         }
@@ -1309,12 +1312,15 @@ for (let y = minY; y <= maxY; y++) {
 function formatNumber(num, digits = 1) {
   return Number(num).toFixed(digits).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
-
-      document.getElementById('damH').textContent = 'ダム高さ：'+formatNumber(damH*10,0) + 'm';
+const ene = ((slidvalue*10-83)*(koV*100)*9.8)/(3.6E12);
+      document.getElementById('lH').textContent = '標高'+formatNumber(slidvalue*10,0) + 'm';
+     document.getElementById('damH').textContent = 'ダム高さ：'+formatNumber(damH*10,0) + 'm';
       document.getElementById('damL').textContent = 'ダム長さ：'+formatNumber(damL*10,0) + 'm';
       document.getElementById('koA').textContent = 'ダム湖面積：'+formatNumber(koA*100,0) + '㎡';
-      document.getElementById('koV').textContent = 'ダム湖体積：'+formatNumber(koV*100*10,0) + '㎥';
-      document.getElementById('koL').textContent = 'ダム湖最深：'+formatNumber(koL*10,0) + 'm';
+      document.getElementById('koV').textContent = 'ダム湖体積：'+formatNumber(koV*100,0) + '㎥';
+      document.getElementById('koL').textContent = 'ダム湖最深：'+formatNumber((koL)*10,0) + 'm';
+      document.getElementById('enegy').textContent = 'エネルギー（GWh）：'+formatNumber((ene),2) + 'GWh';
+//  <div class="info" id="enegy">エネルギー（GWh）：-- m</div>
 
 
 //---------------------------------------------------

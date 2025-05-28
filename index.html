@@ -1295,7 +1295,7 @@ const cdata = [];
   // return; // ここで早期リターンなど安全装置
     }
     if(i==0){
-      clabels.push(j);   // X軸用
+      clabels.push(j*10);   // X軸用
       cdata.push(map2D[y][x]*10);    // Y軸用 10m
       j++;
     }
@@ -1312,7 +1312,7 @@ const cdata = [];
 posjj=j;
 
 for(i=j; i < j + 10; i++){
-     clabels.push(i);   // X軸用
+     clabels.push(i*10);   // X軸用
       cdata.push(85);    // Y軸用 10m
 
 } 
@@ -1371,8 +1371,8 @@ const config = {
   data: ccdata,
   options: {
     scales: {
-      x: { title: { display: true, text: "距離（m）" } },
-      y: { title: { display: true, text: "標高（m）" } }
+      x: { title: { display: true, text: "ダムの断面図　　距離（m）",font: { size: 28, }  } },
+      y: { title: { display: true, text: "標高（m）"} }
     },
   plugins: {
     annotation: {
@@ -1420,11 +1420,12 @@ const config = {
         },
     */     dropLabel: {
     type: 'label',
-    xValue: clabels[posjj]-50, // 例: 5
+    xValue: posjj-10, // 例: 5
     yValue: (waterLevel + 85) / 2, // 中央
     content: [`落差`, `${waterLevel - 85} m`],
     color: 'red',
-    font: { size: 16, weight: 'bold' },
+           position: "right",
+     font: { size: 16, weight: 'bold' },
     backgroundColor: 'rgba(255,255,255,0.9)'
   }
       }

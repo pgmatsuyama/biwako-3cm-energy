@@ -141,7 +141,10 @@ height: auto;      /* これが一番素直。これで子要素の高さにフ�
   </div>
 </div>
 <!--<canvas id="contourCanvas" width="6750" height="9000" style="display:none"></canvas> -->
-</div><div id="ui-controls" style="background:#fff;padding:10px 20px;border-radius:10px;box-shadow:0 2px 12px #0001;max-width:420px;margin:16px auto 0;">
+</div>
+<div style="display: flex; align-items: flex-start; gap: 24px; justify-content: center;">
+  <!-- 左：UIコントロール -->
+  <div id="ui-controls" style="background:#fff;padding:10px 20px;border-radius:10px;box-shadow:0 2px 12px #0001;max-width:420px;margin:16px 0 0 0;">
   <label>
     <input type="checkbox" id="pinSwitch" checked>
     📍 ピン表示ON/OFF
@@ -162,6 +165,13 @@ height: auto;      /* これが一番素直。これで子要素の高さにフ�
     🏗️ ダム建設モードON/OFF (※工事中です)
   </label>
 </div>
+  <div>
+    <canvas id="profileChart" width="800" height="400" style="background:#f6fafd;border-radius:10px;box-shadow:0 2px 12px #0001;"></canvas>
+    <!-- or <img id="damProfileImage" ...> など画像でもOK -->
+  </div>
+  <br>
+ </div> 
+
   <div id="inputGroup">
     <br><br>
     タイトル・コメント・ピンの色を指定して　新しいピンを登録できます<br>
@@ -187,7 +197,6 @@ height: auto;      /* これが一番素直。これで子要素の高さにフ�
          → びわ湖電池プロジェクト
       </a>
   </div>
-<canvas id="profileChart" width="600" height="300"></canvas>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>

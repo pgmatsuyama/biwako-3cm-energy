@@ -109,8 +109,7 @@ height: auto;      /* これが一番素直。これで子要素の高さにフ�
     <div class="button-row">
     <button onclick="openGoogleMap(35.1608, 135.8703)">Google Maps</button>
     <button onclick="openGsiMap(35.0116, 135.7681)">国土地理院地図</button>
-    <button id="doDAMPB" style="display:none" onclick="doDAM()"> ダム作成 </button>
-    <button id="DAMclearPB" style="display:none" onclick="clearLines()"> ダム消去 </button>
+  
   </div>
     <div class="info" id="elevation">上池標高：-- m</div>
     <div class="info" id="drop">有効落差：-- m</div>
@@ -164,7 +163,14 @@ height: auto;      /* これが一番素直。これで子要素の高さにフ�
     <input type="checkbox" id="damSwitch">
     🏗️ ダム建設モードON/OFF (※工事中です)
   </label>
-</div>
+   <div id="DAMPB">
+    <label id="DAMtorisetu"  style="display:none" >
+     MAP上にダムにしたい線から順にクリックしてください
+    </label>
+    <button id="doDAMPB" style="display:none" onclick="doDAM()"> ダム作成 </button>
+    <button id="DAMclearPB" style="display:none" onclick="clearLines()"> ダム消去 </button>
+   </div>
+ </div>
   <div>
     <canvas id="profileChart" width="800" height="400" style="background:#f6fafd;border-radius:10px;box-shadow:0 2px 12px #0001;"></canvas>
     <!-- or <img id="damProfileImage" ...> など画像でもOK -->
@@ -888,8 +894,11 @@ function toggleDamMode(isOn) {
   // 例: ダム堤体クリック受付・冠水範囲再描画など
   const mapDiv = document.getElementById('map');
   damMode=isOn;
-  document.getElementById('DAMclearPB').style.display = isOn ? '' : 'none';
-  document.getElementById('doDAMPB').style.display = isOn ? '' : 'none';
+  document.getElementById('DAMclearPB').style.display = isOn ? 'block' : 'none';
+  document.getElementById('doDAMPB').style.display = isOn ? 'block' : 'none';
+ document.getElementById('DAMtorisetu').style.display = isOn ? 'block' : 'none';
+ //   MAP上にダムにしたい線から順にクリックしてください
+
 
   if(isOn) {
     if (poolLayer) map.removeLayer(poolLayer);    mapDiv.classList.add('crosshair');

@@ -1741,7 +1741,8 @@ if (sumcnt==0){
 function formatNumber(num, digits = 1) {
   return Number(num).toFixed(digits).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
-const ene = ((slidvalue*10-83)*(koV*100)*9.8)/(3.6E12);
+const hhhh=(((slidvalue*10)+(koL*10))/2-85.0);
+const ene = (hhhh*(koV*1000.0)*9.8)/(3.6E12);
       document.getElementById('lH').textContent =  '標高　　：'+formatNumber(slidvalue*10,0) + 'm';
      document.getElementById('damH').textContent = 'ダム堤高：'+formatNumber((slidvalue-damH)*10,0) + 'm';
       document.getElementById('damL').textContent ='ダム長さ：'+formatNumber(damL*10,0) + 'm';

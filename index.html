@@ -113,7 +113,7 @@
     #lakeLevelBar { background-color: #0277bd; }
     #energyLevelBar { background-color: #e53935; }
     .bar-value-label {
-      position: absolute; width: 50%; text-align: center; font-size: 0.8em;
+      position: absolute; width: 80%; text-align: center; font-size: 0.8em;
       font-weight: bold; color: #000; top: 0; pointer-events: none;
     }
     .bar-label { text-align: left; font-size: 0.9em; }
@@ -156,14 +156,14 @@
       <!-- 以下省略（棒グラフなど） -->
       <div class="bar-container">
         <div id="lakeLevelBar" class="bar"></div>
-        <div id="lakeValueLabel" class="bar-value-label"></div>
+        <div id="lakeValueLabel" class="bar-value-label"></div> 
       </div>
-      <div class="bar-label">水位変動（mm）</div>
+      <!--<div class="bar-label">水位変動（mm）</div> -->
       <div class="bar-container">
         <div id="energyLevelBar" class="bar"></div>
-        <div id="energyValueLabel" class="bar-value-label"></div>
+        <div id="energyValueLabel" class="bar-value-label"></div> 
       </div>
-      <div class="bar-label">エネルギー（GWh）</div>
+      <!-- <div class="bar-label">エネルギー（GWh）</div> -->
     </div>
     <div class="info" id="lH">標高　　　:-- m</div>
     <div class="info" id="damH">ダム高さ：-- m</div>
@@ -622,7 +622,36 @@ const img = new Image();
 img.src = 'images/BIWAKOALL8.PNG';
 //const targetW = 650, targetH = 900;
 const imgcanvas = document.createElement('canvas');
-const imgctx = imgcanvas.getContext('2d');
+const imgctx = imgcanvas.getContext('2d', { willReadFrequently: true });
+
+
+function reloadMap2DFromImage() {
+ // const img = new Image();
+  //if(img)
+  //  img=null;
+  img.src = 'images/BIWAKOALL8.PNG';  // 同じ画像でOK
+  img.onload = function() {
+    imgcanvas.width = img.width;
+    imgcanvas.height = img.height;
+    imgctx.drawImage(img, 0, 0);
+
+    const imageData = imgctx.getImageData(0, 0, img.width, img.height).data;
+
+    map2D = [];  // ★ 忘れず初期化
+    for (let y = 0; y < img.height; y++) {
+      let row = [];
+      for (let x = 0; x < img.width; x++) {
+        let i = (y * img.width + x) * 4;
+        let val = imageData[i]; // グレースケールのR成分
+        row.push(val);
+      }
+      map2D.push(row);
+    }
+
+    // → 完了したら doDAM() を呼ぶ
+    doDAM();  // あるいは setTimeout(..., 10) で後回し
+  };
+}
 
 img.onload = function() {
     imgcanvas.width = img.width;
@@ -641,28 +670,6 @@ img.onload = function() {
     }
     map2D.push(row);
   }
-
-/*  // 縮小Canvasにdraw
-  let tmp = document.createElement('canvas');
-  tmp.width = targetW;
-  tmp.height = targetH;
-  let tctx = tmp.getContext('2d');
-  tctx.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight, 0, 0, targetW, targetH);
-
-  // 2D配列化
-  let arr = [];
-  let imgData = tctx.getImageData(0, 0, targetW, targetH).data;
-  for (let y = 0; y < targetH; y++) {
-    arr[y] = [];
-    for (let x = 0; x < targetW; x++) {
-      arr[y][x] = imgData[(y * targetW + x) * 4]; // R値のみ
-    }
-  }
-
-  // 等高線抽出（MarchingSquaresJS）→描画
-  drawContourLowRes(arr, targetW, targetH);
-*/
-
 };
 window.onload = function(){
 const canvas = document.getElementById("profileChart");
@@ -689,7 +696,8 @@ ctx.fillText("上のスライダーで仮想ダム水位の標高を決めます
 ctx.fillText("地図のクリックで、びわ湖との距離を計測します", canvas.width / 2, y); y+=40;
 ctx.fillText("ダム建設モードでダムをマウスで囲んで作ってみましょう", canvas.width / 2, y); y+=40;
 ctx.fillText("ダムを建設すると断面図をここに表示します", canvas.width / 2, y); y+=30;
-ctx.fillText("その位置をクリックして「ピン」登録しましょう", canvas.width / 2, y); y+=30;
+ctx.fillText("良いダム候補地ができたら「ピン」登録しましょう", canvas.width / 2, y); y+=30;
+ctx.fillText("誰かの「ピン」をダブルクリックで再生できるよ！", canvas.width / 2, y); y+=30;
 
 
 }
@@ -736,8 +744,56 @@ function drawContourLowRes(arr, w, h) {
       let elev=row['標高'] || '';
       const color = (row['色'] || '').trim(); // 色
 //      console.log('色:', color, 'URL:', colorMap[color]);
- 
-const   icon = new L.Icon({
+//-----------------------------------------------------------------------
+const icon = new L.Icon({
+  iconUrl: colorMap[color],
+  shadowUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
+comment = comment.replace(/\r?\n/g, '<br>');
+
+const marker = L.marker(
+  [parseFloat(row['緯度']), parseFloat(row['経度'])],
+  { icon: icon }
+).addTo(map)
+  .bindPopup(`<b>${title} ${elev}m </b><br>${comment}`);
+
+// ✅ JSON列がある場合、PINデータとして埋め込む
+if (row['JSON']) {
+  try {
+    marker.myData = JSON.parse(row['JSON']);
+  } catch (e) {
+    console.warn("JSON列のパースに失敗しました:", e);
+  }
+
+  // ✅ ダブルクリックでダムを再現
+  marker.on('dblclick', function () {
+    const data = this.myData;
+    if (!data || !data.damLine) {
+      alert("このPINには再現データがありません");
+      return;
+    }
+
+    clickPoints = data.damLine;
+    waterLevel = data.damLakeLevel;
+    slidvalue = waterLevel / 10;
+    document.getElementById('spnJS').textContent = String(waterLevel);
+    document.getElementById('altSlider').value = slidvalue;
+
+    reloadMap2DFromImage(); // ← 再現処理呼び出し
+  });
+}
+
+markers.push(marker);
+   removemarkers();
+   });
+  });
+//----------------------------------------------------------------------- 
+/*const   icon = new L.Icon({
      iconUrl: colorMap[color],
   //iconUrl: 'images/marker-icon-red.png',
       shadowUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-shadow.png',
@@ -750,11 +806,12 @@ comment = comment.replace(/\r?\n/g, '<br>');
     const marker = L.marker(
       [parseFloat(row['緯度']), parseFloat(row['経度'])], // 必ず配列で！
       { icon: icon } // カスタムアイコン指定
-    ).addTo(map)        .bindPopup(`<b>${title} ${elev}m </b><br>${comment}`);
+    ).addTo(map)        .bindPopup(`<b>${title} ${elev}m </b><br>${comment}`)    ;
   markers.push(marker);
    removemarkers();
    });
   });
+*/
  // グローバル変数を宣言
 let globalLat = null;
 let globalLon = null;
@@ -848,11 +905,11 @@ const radius = Math.sqrt(area / Math.PI)+50; // 単位：m
       }).addTo(map).bindPopup(`仮想ダムプール<br>半径150m`);
 
       document.getElementById('lakeLevelBar').style.height = Math.min(100, suiisa) + '%';
-      document.getElementById('lakeValueLabel').textContent = suiisa.toFixed(1) + ' mm';
+      document.getElementById('lakeValueLabel').textContent = '水位変動 '+suiisa.toFixed(1) + ' mm';
 
       const energyBar = Math.min(100, (energyGWh / 100) * 100);
       document.getElementById('energyLevelBar').style.height = energyBar + '%';
-      document.getElementById('energyValueLabel').textContent = energyGWh.toFixed(2) + ' GWh';
+      document.getElementById('energyValueLabel').textContent = 'エネルギー '+energyGWh.toFixed(2) + ' GWh';
     })
     .catch(() => {
       document.getElementById('elevation').textContent = `標高取得失敗`;

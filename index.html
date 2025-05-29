@@ -867,14 +867,17 @@ map.on('click', normalClickHandler);
       const color = encodeURIComponent(document.querySelector('input[name="color"]:checked').value);
 const rawTitle = document.getElementById('title').value;
 const rawComment = document.getElementById('comment').value;
-      if (rawTitle == null || rawTitle === '' || rawComment == null || rawComment === ''){
+//const json = JSON.stringify(clickPoints, null, 2);//document.getElementById('log').value;
+const json = document.getElementById('log').textContent;
+console.log(json);
+       if (rawTitle == null || rawTitle === '' || rawComment == null || rawComment === ''){
         alert("設定がありません \nタイトル・コメントを入力してください"); 
         return;
       }
   //    const elev=encodeURIComponent(document.getElementById('elevation').value);
       // ここはGoogleフォームのフィールドIDに書き換え！
         // const url = `https://docs.google.com/forms/d/e/1FAIpQLSfFurEII3ojMqlp5Rgc0KinkQ5gkmc9R6ijBzNqv8kvHumjyw/formResponse?entry.138516219=${title}&entry.514491795=${comment}&entry.1688590365=${color}&entry.1150820012=${lat}&entry.1539234844=${lng}`;
-    const url = `https://docs.google.com/forms/d/e/1FAIpQLSfFurEII3ojMqlp5Rgc0KinkQ5gkmc9R6ijBzNqv8kvHumjyw/formResponse?entry.138516219=${title}&entry.1539234844=${comment}&entry.1688590365=${color}&entry.1613901500=${globalElev}&entry.514491795=${globalLat}&entry.1150820012=${globalLon}`;
+    const url = `https://docs.google.com/forms/d/e/1FAIpQLSfFurEII3ojMqlp5Rgc0KinkQ5gkmc9R6ijBzNqv8kvHumjyw/formResponse?entry.32431615=${json}&entry.138516219=${title}&entry.1539234844=${comment}&entry.1688590365=${color}&entry.1613901500=${globalElev}&entry.514491795=${globalLat}&entry.1150820012=${globalLon}`;
       openedWindow=window.open(url, '_blank');
     //  window.close(openedWindow);
     const ccolor = document.querySelector('input[name="color"]:checked').value;
@@ -1354,13 +1357,15 @@ const lngMax = 136.5000; // 東端
   } else {
     clickPoints[clickPoints.length-1] = start; // 上書きでもOK
   }
- }        document.getElementById('log').textContent =
-          'ダム線分リスト:\n' + JSON.stringify(clickPoints, null, 2);
+ }
+ //        document.getElementById('log').textContent =
+ //         'ダム線分リスト:\n' + JSON.stringify(clickPoints, null, 2);
+ let slidvalue= document.getElementById('altSlider').value;
+
 const clabels = [];
 const cdata = [];
- let slidvalue= document.getElementById('altSlider').value;
   damH=0; damL=0; koA=0; koV=0,koL=0;
-  let i=0,j=0; 
+  let i=0,j=0;
   for(i = 0; i < clickPoints.length - 1; i++) {
   const ptA = [clickPoints[i].lat, clickPoints[i].lng];
   const ptB = [clickPoints[i+1].lat, clickPoints[i+1].lng];
@@ -1375,10 +1380,8 @@ const cdata = [];
 // 3. 各セルについてmap2Dをダム値（例: -127）に
   for (const [x, y] of linePixels) {
     if (x < 0 || x >= img.width || y < 0 || y >= img.height) continue; // 範囲外ガード
-    //    console.log('x:', x, 'y:', y);
     if (isNaN(x) || isNaN(y)) {
       console.error('NaN検出', x, y);
-  // return; // ここで早期リターンなど安全装置
     }
     if(i==0){
       clabels.push(j*10);   // X軸用
@@ -1386,7 +1389,7 @@ const cdata = [];
       j++;
     }
     if(map2D[y][x] <= slidvalue){
-      damL+=1;
+       damL+=1;
       if (damH===0 || damH>map2D[y][x] ){
         damH=map2D[y][x];         //ダム
       }
@@ -1396,8 +1399,7 @@ const cdata = [];
 // これをChart.jsのlabels, dataとして利用
 }
 posjj=j;
-
-for(i=j; i < j + 10; i++){
+for(i=j; i < j + 10; i++){  // "びわ湖"
      clabels.push(i*10);   // X軸用
       cdata.push(85);    // Y軸用 10m
 
@@ -1643,7 +1645,7 @@ let maxX = Math.ceil(Math.max(...xs));
 let minY = Math.floor(Math.min(...ys));
 let maxY = Math.ceil(Math.max(...ys));
 
-
+let sumx=0,sumy=0,sumcnt=0;
 for (let y = minY; y <= maxY; y++) {
   for (let x = minX; x <= maxX; x++) {
      if (isPointInPolygon(x, y, polyXY)) {
@@ -1656,10 +1658,29 @@ for (let y = minY; y <= maxY; y++) {
          koL=map2D[y][x];         //ダム
         }
         map2D[y][x] = (200-(slidvalue-map2D[y][x]))&0xff; 
+        sumx+=x; sumy+=y;sumcnt++;
       }
     }
   }
 }
+if (sumcnt==0){
+  alert("データなし　作成できません");
+  return;
+}
+//JSON 用準備
+//  const yy=latMax-((sumy/sumcnt)/ img.height) * (latMax - latMin);
+ let yy=latMax-((sumy/sumcnt)/ img.height) * (latMax - latMin);
+ let xx= lngMin+ ((sumx/sumcnt) / img.width) * (lngMax - lngMin);
+ const e = { latlng: { lat: yy, lng: xx } };
+ normalClickHandler(e);
+ const damData = {
+  pinLat: currentLat=globalLat, //clickPoints[0].lat,
+  pinLng: currentLng=globalLon,  //currentLng=clickPoints[0].lng
+  damLakeLevel: currentWaterLevel=slidvalue*10,
+  damLine: currentPolygonCoords = clickPoints
+  };
+  document.getElementById('log').textContent = JSON.stringify(damData, null, 2);
+
 function formatNumber(num, digits = 1) {
   return Number(num).toFixed(digits).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }

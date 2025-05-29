@@ -1746,7 +1746,7 @@ const ene = ((slidvalue*10-83)*(koV*100)*9.8)/(3.6E12);
      document.getElementById('damH').textContent = 'ダム堤高：'+formatNumber((slidvalue-damH)*10,0) + 'm';
       document.getElementById('damL').textContent ='ダム長さ：'+formatNumber(damL*10,0) + 'm';
       document.getElementById('koA').textContent = 'ダム湖面積：'+formatNumber(koA*100,0) + '㎡';
-      document.getElementById('koV').textContent = 'ダム湖体積：'+formatNumber(koV*100,0) + '㎥';
+      document.getElementById('koV').textContent = 'ダム湖体積：'+formatNumber(koV,0) + '㎥';
       document.getElementById('koL').textContent = 'ダム湖最深：'+formatNumber((slidvalue-koL)*10,0) + 'm';
       document.getElementById('enegy').textContent = 'エネルギー（GWh）：'+formatNumber((ene),2) + 'GWh';
 //  <div class="info" id="enegy">エネルギー（GWh）：-- m</div>

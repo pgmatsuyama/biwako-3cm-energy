@@ -17,15 +17,11 @@
 
 を自動計算・グラフ化します。
 
----
-
 ## 📦 内容物
 
 - `index.html` : 地図とシミュレータ本体
 - `images/` : スクリーンショット等（任意）
 - `README.md` : この説明ファイル
-
----
 
 ## 📐 技術情報
 
@@ -35,34 +31,28 @@
 - 揚水量：20,100,000 m³（= 琵琶湖3cm水位相当）
 - エネルギー換算：E = m × g × h / 3.6e12 → [GWh]
 
----
-
 ## 🌍 実際に動かしてみる（GitHub Pages）
 
 👉 [びわ湖電池シミュレーターを見る](https://pgmatsuyama.github.io/biwako-3cm-energy/)
 
 ※お好きな場所をクリックして、あなたのダム構想を作ってみてください！---
+## 📱 スマホでアクセスするには
 
+![QR Code](https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://pgmatsuyama.github.io/biwako-3cm-energy/)
 ## 🧭 使い方
 
 1. `index.html` をブラウザで開く
 2. 地図上で上池候補地点をクリック
 3. エネルギー量と水位差を確認
 
----
-
 ## ✨ ライセンス
 
 MIT License
-
----
 
 ## 🙋‍♂️ 作者
 
 - GitHub: [pgmatsuyama](https://github.com/pgmatsuyama)
 - プロトタイピング・サイエンスツール制作協力：ChatGPT
-
----
 
 ## 💡 こんな使い方に
 

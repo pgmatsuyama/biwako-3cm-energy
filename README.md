@@ -37,6 +37,12 @@
 
 ---
 
+## 🌍 実際に動かしてみる（GitHub Pages）
+
+👉 [びわ湖電池シミュレーターを見る](https://pgmatsuyama.github.io/biwako-3cm-energy/)
+
+※お好きな場所をクリックして、あなたのダム構想を作ってみてください！---
+
 ## 🧭 使い方
 
 1. `index.html` をブラウザで開く

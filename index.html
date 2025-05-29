@@ -124,8 +124,6 @@
     }
   </style>
 </head>
-
------------------------------------------------------------------------------
 <body>
   <h2>びわ湖3cm電池シミュレータ　上池の候補地を探そう スライダーでGO</h2>
   <p>地図をクリックすると、標高差と発電量、琵琶湖水位差、最短水際までの距離が表示されます。</p>
@@ -142,7 +140,7 @@
     <imgcanvas id="contourCanvas" width="6750" height="9000" style="display:none"></canvas>
   </div>
   <div class="result-block">
-    <div>結果の表示エリア</div>
+    <!-- <div>結果の表示エリア</div> -->
     <div class="info" id="coords">緯度・経度：--</div>
     <div class="button-row">
     <button onclick="openGoogleMap(35.1608, 135.8703)">Google Maps</button>
@@ -184,7 +182,7 @@
   <!-- 左：UIコントロール -->
   <div id="ui-controls" style="background:#fff;padding:10px 20px;border-radius:10px;box-shadow:0 2px 12px #0001;max-width:420px;margin:16px 0 0 0;">
   <label>
-    <input type="checkbox" id="pinSwitch" checked>
+    <input type="checkbox" id="pinSwitch">
     📍 ピン表示ON/OFF
   </label>
   <br>
@@ -200,11 +198,11 @@
   <br>
   <label>
     <input type="checkbox" id="damSwitch">
-    🏗️ ダム建設モードON/OFF (※工事中です)
+    🏗️ ダム建設モードON/OFF
   </label>
    <div id="DAMPB">
     <label id="DAMtorisetu"  style="display:none" >
-     MAP上にダムにしたい線から囲むように順にクリックしてください
+     MAP上にダムにする線から順に囲むようにクリックしてください　線を完成させると赤塗りになりますので下の「ダム作成」してください
     </label>
     <button id="doDAMPB" style="display:none"  class="button-row"  onclick="doDAM()"> ダム作成 </button>
     <button id="DAMclearPB" style="display:none"  class="button-row"  onclick="clearLines()"> ダム消去 </button>
@@ -664,8 +662,37 @@ img.onload = function() {
   // 等高線抽出（MarchingSquaresJS）→描画
   drawContourLowRes(arr, targetW, targetH);
 */
-};
 
+};
+window.onload = function(){
+const canvas = document.getElementById("profileChart");
+const ctx = canvas.getContext("2d");
+
+// 背景を白く塗る（任意）
+ctx.fillStyle = "#f6fafd"; // 背景色と同じ
+ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+// 文字設定
+ctx.fillStyle = "#333";               // 文字色
+ctx.font = "20px sans-serif";         // フォントサイズと書体
+ctx.textAlign = "center";             // 中央揃え
+//ctx.textBaseline = "middle";          // 垂直方向中央
+
+// 表示するメッセージ
+const message = "ダムの断面図がここに表示されます";
+let y=canvas.height / 7;//
+// 描画位置（中央）
+ctx.fillText("ようこそ「びわ湖電池」へ　みんなでダム候補地を探しましょう", canvas.width / 2, y); y+=40;
+ctx.fillText("地図の拡大はマウスのコロコロやキーの＋－で操作します", canvas.width / 2, y); y+=40;
+ctx.fillText("マウスのドラッグで地図位置を変更します", canvas.width / 2, y); y+=40;
+ctx.fillText("上のスライダーで仮想ダム水位の標高を決めます", canvas.width / 2, y); y+=40;
+ctx.fillText("地図のクリックで、びわ湖との距離を計測します", canvas.width / 2, y); y+=40;
+ctx.fillText("ダム建設モードでダムをマウスで囲んで作ってみましょう", canvas.width / 2, y); y+=40;
+ctx.fillText("ダムを建設すると断面図をここに表示します", canvas.width / 2, y); y+=30;
+ctx.fillText("その位置をクリックして「ピン」登録しましょう", canvas.width / 2, y); y+=30;
+
+
+}
 function drawContourLowRes(arr, w, h) {
 /*  const canvas = document.getElementById('contourCanvas');
   canvas.width = w; canvas.height = h;
@@ -725,10 +752,10 @@ comment = comment.replace(/\r?\n/g, '<br>');
       { icon: icon } // カスタムアイコン指定
     ).addTo(map)        .bindPopup(`<b>${title} ${elev}m </b><br>${comment}`);
   markers.push(marker);
-  
+   removemarkers();
    });
   });
-// グローバル変数を宣言
+ // グローバル変数を宣言
 let globalLat = null;
 let globalLon = null;
 let globalElev = null;
@@ -1271,6 +1298,7 @@ function XY2latlng(x, y, latMin, latMax, lngMin, lngMax, width, height) {
 }
 
 // 全頂点を画像座標へ
+if(polygon){
 const polyXY = polygon.map (([lat, lng]) =>
   latLngToXY(lat, lng, latMin, latMax, lngMin, lngMax, width, height)
 );
@@ -1282,7 +1310,7 @@ const minX = Math.floor(Math.min(...xs));
 const maxX = Math.ceil(Math.max(...xs));
 const minY = Math.floor(Math.min(...ys));
 const maxY = Math.ceil(Math.max(...ys));
-
+}
 // --- 3. 点がPolygon内かどうかを判定する関数（even-odd/ray-casting法）---
 /*function isPointInPolygon(x, y, polyXY) {
   let inside = false;
@@ -1377,7 +1405,127 @@ for(i=j; i < j + 10; i++){
 posjk=j;
 //  console.log(clabels); // [0, 10, 20, 30]
 //  console.log(cdata);   // [532, 531, 528, 525]
+//-------------------------------------------------------------------------------
+const waterLevel = slidvalue * 10;
 
+const lake = cdata.map(h => (h <= waterLevel && h > 85) ? h : null);  // ダム湖
+const ground = cdata.map(h => (h > waterLevel)? waterLevel: ((h!=85)?h:null)); // 地面：常にゼロ基準
+const terrain = cdata.map(h => (h > waterLevel)? h-waterLevel:null);                   // 地形全体
+
+const biwako = cdata.map(h => (h <= 85) ? h : null); // びわ湖レベル
+//  console.log(ground);
+const ccdata = {
+  labels: clabels,
+  datasets: [
+    {
+      label: "地面",
+      type: "bar",
+      data: ground,
+      backgroundColor: "saddlebrown",
+      stack: 'stack1',
+      borderSkipped: false,
+      barPercentage: 1.0,
+      categoryPercentage: 1.0
+    },
+    {
+      label: "山",
+      type: "bar",
+      data: terrain,
+      backgroundColor: "green",
+      stack: 'stack1',
+      borderSkipped: false,
+      barPercentage: 1.0,
+      categoryPercentage: 1.0
+    },
+    {
+      label: "ダム湖",
+      type: "line",
+      data: lake,
+      backgroundColor: "skyblue",
+      borderColor: "deepskyblue",
+      fill: { target: { value: waterLevel } },
+      tension: 0.1
+    },
+    {
+      label: "びわ湖",
+      type: "line",
+      data: biwako,
+      backgroundColor: "skyblue",
+      borderColor: "deepskyblue",
+      fill: { target: { value: 0 } },
+      tension: 0.1
+    }
+  ]
+};
+const config = {
+  type: "bar",
+  data: ccdata,
+  options: {
+    scales: {
+      x: {
+        title: {
+          display: true,
+          text: "ダム断面距離（m）",
+          font: { size: 16 }
+        }
+      },
+      y: {
+        beginAtZero: true,
+        title: {
+          display: true,
+          text: "標高（m）",
+          font: { size: 16 }
+        }
+      }
+    },
+    plugins: {
+      annotation: {
+        annotations: {
+          damLevel: {
+            type: 'line',
+            yMin: waterLevel,
+            yMax: waterLevel,
+            borderColor: 'blue',
+            borderWidth: 2,
+            label: {
+              content: `ダム湖水位 ${waterLevel}m`,
+              enabled: true,
+              display: true,
+              position: 'end'
+            }
+          },
+          biwakoLevel: {
+            type: 'line',
+            yMin: 85,
+            yMax: 85,
+            borderColor: 'deepskyblue',
+            borderWidth: 2,
+            label: {
+              content: `びわ湖水位 85m`,
+              enabled: true,
+              display: true,
+              position: 'start'
+            }
+          },
+        dropLabel: {
+    type: 'label',
+    xValue: posjj-10, // 例: 5
+    yValue: (waterLevel + 85) / 2, // 中央
+    content: [`落差`, `${waterLevel - 85} m`],
+    color: 'red',
+           position: "right",
+     font: { size: 16, weight: 'bold' },
+    backgroundColor: 'rgba(255,255,255,0.9)'
+  }
+
+        }
+      }
+    }
+  }
+};
+
+//-------------------------------------------------------------------------------
+/*
 const waterLevel = slidvalue*10; // 例：ダム水位
 
 const mountain = cdata.map(h => h > waterLevel ? h : null);
@@ -1461,22 +1609,7 @@ const config = {
             position: "start"
           }
         },
-    /*    dropArrow: {
-          type: 'box',
-          xMin: clabels[posjj]-20, // 例: びわ湖区間開始の距離
-          xMax: clabels[posjk]-20,    // 例: びわ湖区間終了の距離
-          yMin: lakebiwa,
-          yMax: lake,
-          backgroundColor: 'rgba(255,0,0,0.08)',
-          borderWidth: 0,
-          label: {
-            content: `落差: ${waterLevel - 85} m`,
-            enabled: true,
-              display: true,
-            position: "center"
-          }
-        },
-    */     dropLabel: {
+        dropLabel: {
     type: 'label',
     xValue: posjj-10, // 例: 5
     yValue: (waterLevel + 85) / 2, // 中央
@@ -1491,7 +1624,7 @@ const config = {
   }
 }
 }
-
+*/
 
 if (myChart) {
   myChart.destroy();  // すでにグラフがあれば破棄

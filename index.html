@@ -7,71 +7,107 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     #inputGroup { display: none; } 
-  
+
     #map { height: 500px; width: 1000px ; margin-bottom: 10px; }
-body { font-family: sans-serif; line-height: 1.6; padding: 20px; margin: 0; }
-.container {
-  display: flex;
-  flex-direction: row;
-height: auto;      /* これが一番素直。これで子要素の高さにフィット height: 90vh;*/  
-  display: flex;
-  box-sizing: border-box;
-}
-.map-block {
-  flex: 1 1 0%;
-  min-width: 600px;
-  min-height: 600px;
-  max-height: 600px;
-  background: #dde8ff;
-  display: flex;
+    #ui-controls {
+     display: flex;
+  flex-direction: column;
+  flex-wrap: wrap; /* ✅ 折り返しを許可 */
   align-items: flex-start;
   justify-content: flex-start;
-}
-.result-block {
- max-height: 600px;   /* これで最大高さを制限できる */
-  overflow-y: auto;    /* はみ出したらスクロール */
-    width: 450px;
-  max-width: 40vw;
-  min-width: 300px;
-  box-sizing: border-box;
-  background: #fffbe0;
-  border-left: 2px solid #b0a000;
-  padding: 1.2em 1em 1em 1.5em;
-  display: flex;
-  flex-direction: column;
-  font-size: 1.05em;
-  overflow-y: auto;
-}
-.button-row {
-  display: flex;
-  gap: 0.7em;  /* ボタンの間に適度な空き */
-  margin-bottom: 8px; /* お好みで下の隙間 */
-}
-#map {
-  width: 100%;
-  height: 600px;      /* 必要に応じて */
-}
-#map.crosshair { cursor: crosshair !important; }
-@media (max-width: 900px) {
-  .container {
-    flex-direction: column;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  overflow-x: hidden;
+   white-space: normal !important;
   }
-  .map-block, .result-block {
-    min-width: 0;
-    max-width: 100vw;
-    width: 100vw;
-    min-height: 220px;
-    max-height: unset;
+
+    body { font-family: sans-serif; line-height: 1.6; padding: 20px; margin: 0; }
+    .container {
+      display: flex;
+      flex-direction: row;
+      height: auto;
+      box-sizing: border-box;
+    }
+    .map-block {
+      flex: 1 1 0%;
+      min-width: 600px;
+      min-height: 600px;
+      max-height: 600px;
+      background: #dde8ff;
+      display: flex;
+      align-items: flex-start;
+      justify-content: flex-start;
+    }
+    .result-block {
+      max-height: 600px;
+      overflow-y: auto;
+      width: 450px;
+      max-width: 40vw;
+      min-width: 300px;
+      box-sizing: border-box;
+      background: #fffbe0;
+      border-left: 2px solid #b0a000;
+      padding: 1.2em 1em 1em 1.5em;
+      display: flex;
+      flex-direction: column;
+      font-size: 1.05em;
+      overflow-y: auto;
+    }
+    .button-row {
+      display: flex;
+      gap: 0.7em;
+      margin-bottom: 8px;
+    }
+    #map {
+      width: 100%;
+      height: 600px;
+    }
+    #map.crosshair { cursor: crosshair !important; }
+
+    .control-canvas-wrapper {
+      display: flex;
+      flex-direction: row;
+      align-items: flex-start;
+      gap: 24px;
+      justify-content: center;
+      width: 100%;
+    }
+
+    @media (max-width: 900px) {
+      .container {
+        flex-direction: column;
+      }
+      .map-block, .result-block {
+        min-width: 0;
+        max-width: 100vw;
+        width: 100vw;
+        min-height: 220px;
+        max-height: unset;
+      }
+      #map {
+        height: 400px;
+        min-height: 200px;
+        max-height: 600px;
+      }
+      #ui-controls {
+        max-width: 100%;
+        width: 100%;
+        margin: 16px auto;
+        box-sizing: border-box;
+      }
+
+  #ui-controls label {
+    white-space: normal;
   }
-  #map {
-    height: 400px;      /* スマホは高さ控えめ推奨 */
-    min-height: 200px;
-    max-height: 600px;
-  }
-}
-   .bar-container {
+      .control-canvas-wrapper {
+        flex-direction: column;
+        align-items: center;
+      }
+    }
+
+    .bar-container {
       position: relative; width: 80px; height: 100px; border: 1px solid #444;
-      background-color: #f0f0f0; margin: 5x 5px 10px 0;
+      background-color: #f0f0f0; margin: 5px 5px 10px 0;
     }
     .bar { position: absolute; bottom: 0; width: 100%; transition: height 0.5s; }
     #lakeLevelBar { background-color: #0277bd; }
@@ -81,13 +117,15 @@ height: auto;      /* これが一番素直。これで子要素の高さにフ�
       font-weight: bold; color: #000; top: 0; pointer-events: none;
     }
     .bar-label { text-align: left; font-size: 0.9em; }
-    .bar-area { display: flex; gap: 20px; margin-top: 10px; }
+    .bar-area { display: flex; gap: 20px; margin-top: 10px; flex-wrap: wrap; }
     .bigslider {
-      width: 400px;      /* お好きな長さに！ */
-      max-width: 90%;   /* 画面の90%まで可 */
+      width: 400px;
+      max-width: 90%;
     }
-</style>
+  </style>
 </head>
+
+-----------------------------------------------------------------------------
 <body>
   <h2>びわ湖3cm電池シミュレータ　上池の候補地を探そう スライダーでGO</h2>
   <p>地図をクリックすると、標高差と発電量、琵琶湖水位差、最短水際までの距離が表示されます。</p>
@@ -142,6 +180,7 @@ height: auto;      /* これが一番素直。これで子要素の高さにフ�
 <!--<canvas id="contourCanvas" width="6750" height="9000" style="display:none"></canvas> -->
 </div>
 <div style="display: flex; align-items: flex-start; gap: 24px; justify-content: center;">
+<div class="control-canvas-wrapper">
   <!-- 左：UIコントロール -->
   <div id="ui-controls" style="background:#fff;padding:10px 20px;border-radius:10px;box-shadow:0 2px 12px #0001;max-width:420px;margin:16px 0 0 0;">
   <label>
@@ -165,10 +204,10 @@ height: auto;      /* これが一番素直。これで子要素の高さにフ�
   </label>
    <div id="DAMPB">
     <label id="DAMtorisetu"  style="display:none" >
-     MAP上にダムにしたい線から順にクリックしてください
+     MAP上にダムにしたい線から囲むように順にクリックしてください
     </label>
-    <button id="doDAMPB" style="display:none" onclick="doDAM()"> ダム作成 </button>
-    <button id="DAMclearPB" style="display:none" onclick="clearLines()"> ダム消去 </button>
+    <button id="doDAMPB" style="display:none"  class="button-row"  onclick="doDAM()"> ダム作成 </button>
+    <button id="DAMclearPB" style="display:none"  class="button-row"  onclick="clearLines()"> ダム消去 </button>
    </div>
  </div>
   <div>
@@ -177,6 +216,7 @@ height: auto;      /* これが一番素直。これで子要素の高さにフ�
   </div>
   <br>
  </div> 
+</div> 
 
   <div id="inputGroup">
     <br><br>

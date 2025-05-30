@@ -729,13 +729,28 @@ function drawContourLowRes(arr, w, h) {
 }
 /*-------------------------------------------------------------*/
 // 0（完全透明）～1（完全不透明）で指定
-
-//L.imageOverlay(img.src, imageBounds, {opacity: 0.5  }).addTo(map);
+/*20250530
     L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
       maxZoom: 17,
       attribution: '© OpenTopoMap (CC-BY-SA)'
     }).addTo(map);
- 
+*/ 
+var baseLayers = {
+  "OpenTopoMap": L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+    maxZoom: 17, attribution: '© OpenTopoMap (CC-BY-SA)'
+  }),
+  "国土地理院（標準地図）": L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png', {
+    maxZoom: 18, attribution: "地図：国土地理院"
+  }),
+  "国土地理院（航空写真）": L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/ort/{z}/{x}/{y}.jpg', {
+    maxZoom: 18, attribution: "空中写真：国土地理院"
+  })
+};
+// 最初に表示する地図を指定
+//map.addLayer(baseLayers["OpenTopoMap"]);
+map.addLayer(baseLayers["国土地理院（航空写真）"]);
+// レイヤー切り替えコントロールを追加 国土地理院（航空写真）
+L.control.layers(baseLayers).addTo(map);
    // CSV取得してパースしてピン表示
     //fetch(CSV_URL)
     fetch(CSV_URL + "&ts=" + Date.now())
@@ -1739,7 +1754,7 @@ const config = {
     type: 'label',
     xValue: posjj-10, // 例: 5
     yValue: (waterLevel + 85) / 2, // 中央
-    content: [`落差`, `${waterLevel - 85} m`, `～${waterLevel-(koL*10) - 85} m`],
+    content: [`落差`, `${waterLevel - 85} m`, `～${/*waterLevel-*/  (koL*10) - 85} m`],
     color: 'red',
            position: "right",
      font: { size: 16, weight: 'bold' },

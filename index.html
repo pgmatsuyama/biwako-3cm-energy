@@ -207,7 +207,12 @@
     <button id="doDAMPB" style="display:none"  class="button-row"  onclick="doDAM()"> ダム作成 </button>
     <button id="DAMclearPB" style="display:none"  class="button-row"  onclick="clearLines()"> ダム消去 </button>
    </div>
- </div>
+   <br>
+  <label>
+    <input type="checkbox" id="saveSwitch">
+    🏗️ 作成時　.PNG ファイルをダウンロードする
+  </label>
+</div>
   <div>
     <canvas id="profileChart" width="800" height="400" style="background:#f6fafd;border-radius:10px;box-shadow:0 2px 12px #0001;"></canvas>
     <!-- or <img id="damProfileImage" ...> など画像でもOK -->
@@ -1857,10 +1862,12 @@ outCtx.putImageData(outImage, 0, 0);
 // 4. 画面表示またはPNG保存
 document.body.appendChild(outCanvas);
 // PNGダウンロード
-const link = document.createElement('a');
-link.href = outCanvas.toDataURL('image/png');
-link.download = 'lake_clip.png';
-link.click();
+  const link = document.createElement('a');
+  link.href = outCanvas.toDataURL('image/png');
+if(document.getElementById('saveSwitch').checked){
+  link.download = 'lake_clip.png';
+  link.click();
+}
 const imageBounds = [
   [latMin, lngMin], // 南西（左下）
   [latMax, lngMax]  // 北東（右上）
@@ -1871,10 +1878,10 @@ const imageBounds = [
   const [lat2,lng2] = XY2latlng(maxX, maxY, latMin, latMax, lngMin, lngMax, img.width, img.height);
   imageBounds[0]=[lat1,lng1 ];
   imageBounds[1]=[lat2,lng2] ;
-L.imageOverlay(link.href , imageBounds, {
+  L.imageOverlay(link.href , imageBounds, {
 
-  opacity: 1
-}).addTo(map);
+    opacity: 1
+  }).addTo(map);
 
 clearLines(); //gamen clear
 document.getElementById('damSwitch').checked=0;

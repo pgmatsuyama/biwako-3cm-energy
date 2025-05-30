@@ -751,6 +751,9 @@ var baseLayers = {
 map.addLayer(baseLayers["国土地理院（航空写真）"]);
 // レイヤー切り替えコントロールを追加 国土地理院（航空写真）
 L.control.layers(baseLayers).addTo(map);
+//var layerControl = L.control.layers(baseLayers, overlays).addTo(map);
+// ページロード時に自動で開く（simulate click）
+document.querySelector('.leaflet-control-layers-toggle').click();
    // CSV取得してパースしてピン表示
     //fetch(CSV_URL)
     fetch(CSV_URL + "&ts=" + Date.now())

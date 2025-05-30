@@ -1344,7 +1344,7 @@ function isPointOnLineSegment(point, segA, segB, tolerance = 1e-5) {
   const d = dist(segA, segB);
   return Math.abs((d1 + d2) - d) < tolerance;
 }
-var damH,damL,koA,KoV,koL;
+let damH=0,damL=0,koA=0,KoV=0,koL=0;
 
 // --- 1. 緯度経度→画像座標(x, y)に変換 ---
 function latLngToXY(lat, lng, latMin, latMax, lngMin, lngMax, width, height) {
@@ -1494,12 +1494,22 @@ const myPlugin = {
     const xScale = chart.scales['x'];
    const yScale = chart.scales['y'];
     // 例: clabels & hist (345要素)
+    let sum=0,max=0;
+    for (let i = 0; i < 127; i++) {
+      if(hist[i]>max)
+        max=hist[i];
+      sum+=hist[i];
+    }
+    if(max<=0 || sum<=0)
+      return;
     for (let i = 0; i < 127; i++) {
 //      const y = yScale.getPixelForValue(clabels[i]);
+      if(hist[i]<=0)
+        continue;
       const y = yScale.getPixelForValue(i*10);
       //console.log(y);
       const x0 = xScale.left;
-      const x1 = xScale.getPixelForValue(hist[i]*3);  //
+      const x1 = xScale.left+((hist[i]*64)/(max));  //
       ctx.save();
       ctx.strokeStyle = 'yellow';
       ctx.lineWidth = 3;
@@ -1517,8 +1527,8 @@ const myPlugin = {
       ctx.beginPath();
       ctx.moveTo(xx0-10, yy0);
       ctx.lineTo(xx0+20, yy0);
-    ctx.font = "bold 16px sans-serif";
-  ctx.fillStyle = "gold"; // 黄色い文字例
+    ctx.font = "bold 12px sans-serif";
+  ctx.fillStyle = "gray"; //"gold"; // 黄色い文字例
   // 座標はチャート領域の左上など好みの位置に
  // ctx.fillText("ヒストグラム（標高ごとの面積分布）", xScale.left + 20, yScale.top - 20);
   ctx.fillText("標高ごとの面積分布", xScale.left + 20, yScale.top - 15);
@@ -1566,6 +1576,39 @@ const terrain = cdata.map(h => (h > waterLevel)? h-waterLevel:null);            
 const biwako = cdata.map(h => (h <= 85) ? h : null); // びわ湖レベル
 //const xhist = clabels.map(h => hdata[h] ); //hist(h => hist[h/10]);
 //  console.log(ground);
+const polyXY = clickPoints.map(({lat, lng}) =>
+  latLngToXY(lat, lng, latMin, latMax, lngMin, lngMax, img.width, img.height)
+);
+let xs = polyXY.map(p => p[0]); // polyXY: Polygonの画像座標リスト
+let ys = polyXY.map(p => p[1]);
+
+let minX = Math.floor(Math.min(...xs));
+let maxX = Math.ceil(Math.max(...xs));
+let minY = Math.floor(Math.min(...ys));
+let maxY = Math.ceil(Math.max(...ys));
+
+let sumx=0,sumy=0,sumcnt=0;
+for (let y = minY; y <= maxY; y++) {
+  for (let x = minX; x <= maxX; x++) {
+     if (isPointInPolygon(x, y, polyXY)) {
+      if (map2D[y][x] != 0x81 && map2D[y][x] <= slidvalue) {
+        // ここが「水没セル」
+        // 例: map2D[y][x] = -10; // 水深10mで塗る、色分け用のマークを付与など
+        koA+=1;
+        koV +=((slidvalue+1)-(map2D[y][x])); 
+        if (koL===0 || koL> map2D[y][x] ){
+         koL=map2D[y][x];         //ダム
+        }
+        map2D[y][x] = (200-(slidvalue-map2D[y][x]))&0xff; 
+        sumx+=x; sumy+=y;sumcnt++;
+      }
+    }
+  }
+}
+if (sumcnt==0){
+  alert("データなし　作成できません");
+  return;
+}
 const ccdata = {
   labels: clabels,
   datasets: [
@@ -1691,7 +1734,7 @@ const config = {
     type: 'label',
     xValue: posjj-10, // 例: 5
     yValue: (waterLevel + 85) / 2, // 中央
-    content: [`落差`, `${waterLevel - 85} m`],
+    content: [`落差`, `${waterLevel - 85} m`, `～${waterLevel-(koL*10) - 85} m`],
     color: 'red',
            position: "right",
      font: { size: 16, weight: 'bold' },
@@ -1706,6 +1749,8 @@ const config = {
 };
 
 
+console.log(waterLevel);
+console.log(koL);
 if (myChart) {
   myChart.destroy();  // すでにグラフがあれば破棄
 }
@@ -1716,40 +1761,7 @@ myChart = new Chart(document.getElementById("profileChart"), config);
   myChart.update();
 }, 100);
 */
-const polyXY = clickPoints.map(({lat, lng}) =>
-  latLngToXY(lat, lng, latMin, latMax, lngMin, lngMax, img.width, img.height)
-);
-let xs = polyXY.map(p => p[0]); // polyXY: Polygonの画像座標リスト
-let ys = polyXY.map(p => p[1]);
-
-let minX = Math.floor(Math.min(...xs));
-let maxX = Math.ceil(Math.max(...xs));
-let minY = Math.floor(Math.min(...ys));
-let maxY = Math.ceil(Math.max(...ys));
-
-let sumx=0,sumy=0,sumcnt=0;
-for (let y = minY; y <= maxY; y++) {
-  for (let x = minX; x <= maxX; x++) {
-     if (isPointInPolygon(x, y, polyXY)) {
-      if (map2D[y][x] != 0x81 && map2D[y][x] <= slidvalue) {
-        // ここが「水没セル」
-        // 例: map2D[y][x] = -10; // 水深10mで塗る、色分け用のマークを付与など
-        koA+=1;
-        koV +=((slidvalue+1)-(map2D[y][x])); 
-        if (koL===0 || koL> map2D[y][x] ){
-         koL=map2D[y][x];         //ダム
-        }
-        map2D[y][x] = (200-(slidvalue-map2D[y][x]))&0xff; 
-        sumx+=x; sumy+=y;sumcnt++;
-      }
-    }
-  }
-}
-if (sumcnt==0){
-  alert("データなし　作成できません");
-  return;
-}
-console.log(Chart.version);
+//console.log(Chart.version);
 //JSON 用準備
 //  const yy=latMax-((sumy/sumcnt)/ img.height) * (latMax - latMin);
  let yy=latMax-((sumy/sumcnt)/ img.height) * (latMax - latMin);

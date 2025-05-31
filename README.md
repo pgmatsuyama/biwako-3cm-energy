@@ -39,6 +39,11 @@
 ## 📱 スマホでアクセスするには
 
 ![QR Code](https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://pgmatsuyama.github.io/biwako-3cm-energy/)
+
+<h3>ダム湖シミュレーションの例</h3>
+<p>マウス操作でダム湖を造る方法をアニメーションで解説します。</p>
+<img src="https://pgmatsuyama.github.io/biwako-3cm-energy/Animation3cm.gif" alt="ダム湖シミュレーションGIF" width="500">
+
 ## 🧭 使い方
 
 1. `index.html` をブラウザで開く

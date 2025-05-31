@@ -42,7 +42,7 @@
 
 <h3>ダム湖シミュレーションの例</h3>
 <p>マウス操作でダム湖を造る方法をアニメーションで解説します。</p>
-<img src="https://pgmatsuyama.github.io/biwako-3cm-energy/Animation3cm.gif" alt="ダム湖シミュレーションGIF" width="500">
+<img src="https://pgmatsuyama.github.io/biwako-3cm-energy/images/Animation3cm.gif" alt="ダム湖シミュレーションGIF" width="500">
 
 ## 🧭 使い方
 

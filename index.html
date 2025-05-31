@@ -122,11 +122,26 @@
       width: 400px;
       max-width: 90%;
     }
-    #manual-link:hover {
+    #manual-link {
+  position: fixed;
+  top: 16px;       /* 上からの距離 */
+  right: 16px;     /* 右からの距離 */
+  z-index: 1000;   /* 他の要素より前面に */
+  background: #f0f4ff;
+  color: #2257a7;
+  padding: 10px 18px;
+  border-radius: 22px;
+  box-shadow: 0 2px 8px rgba(40,60,120,0.07);
+  font-weight: bold;
+  text-decoration: none;
+  font-size: 16px;
+  transition: background 0.2s;
+}
+#manual-link:hover {
   background: #d2e3fa;
   color: #113377;
 }
-  </style>
+   </style>
 </head>
     <a href="biwako_denchi_3cm_manual.htm" target="_blank" rel="noopener" id="manual-link">マニュアル（新しいタブで開く）</a>
 

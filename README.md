@@ -50,6 +50,9 @@
 2. 地図上で上池候補地点をクリック
 3. エネルギー量と水位差を確認
 
+👉 [びわ湖電池シミュレーターのマニュアルを製作中](https://pgmatsuyama.github.io/biwako-3cm-energy/biwako_denchi_3cm_manual.htm)
+
+
 ## ✨ ライセンス
 
 MIT License
